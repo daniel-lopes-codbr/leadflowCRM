@@ -30,14 +30,14 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir os componentes base de UI e a landing page pública, 100% estática.
 
 **Entregas:**
-- [ ] Componentes base (botões, cards, badges de status) via shadcn/ui
-- [ ] Header e Footer públicos
-- [ ] Seção Hero
-- [ ] Seção Funcionalidades
-- [ ] Seção Planos/Preços (Free vs Pro)
-- [ ] Seção Call-to-Action
-- [ ] Banner de cookies (placeholder LGPD)
-- [ ] Responsividade mobile/desktop
+- [x] Componentes base (botões, cards, badges de status) via shadcn/ui
+- [x] Header e Footer públicos
+- [x] Seção Hero
+- [x] Seção Funcionalidades
+- [x] Seção Planos/Preços (Free vs Pro)
+- [x] Seção Call-to-Action
+- [x] Banner de cookies (placeholder LGPD)
+- [x] Responsividade mobile/desktop
 
 **Commit final:** `feat: landing page e design system base`
 
