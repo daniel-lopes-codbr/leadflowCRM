@@ -119,10 +119,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir as telas de configurações — workspace/branding, membros e planos — mockadas.
 
 **Entregas:**
-- [ ] Tela de edição de Workspace (nome, upload de logo com preview local)
-- [ ] Tela de gestão de membros (convidar, remover, listar)
-- [ ] Tela de Planos (Free vs Pro) com indicador de uso/limite
-- [ ] Tela de exportação e exclusão de dados (LGPD)
+- [x] Tela de edição de Workspace (nome, upload de logo com preview local)
+- [x] Tela de gestão de membros (convidar, remover, listar)
+- [x] Tela de Planos (Free vs Pro) com indicador de uso/limite
+- [x] Tela de exportação e exclusão de dados (LGPD)
 
 **Commit final:** `feat: UI de configurações (workspace, membros, planos, LGPD)`
 
