@@ -62,11 +62,11 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir a casca da aplicação autenticada: sidebar, navbar e troca de workspace, com dados mockados.
 
 **Entregas:**
-- [ ] Sidebar com navegação (Dashboard, Leads, Pipeline, Settings)
-- [ ] Navbar com usuário/avatar
-- [ ] Dropdown de troca de Workspace (mock com múltiplos workspaces)
-- [ ] Exibição do logo do workspace na sidebar (placeholder)
-- [ ] Layout responsivo (sidebar colapsável em mobile)
+- [x] Sidebar com navegação (Dashboard, Leads, Pipeline, Settings)
+- [x] Navbar com usuário/avatar
+- [x] Dropdown de troca de Workspace (mock com múltiplos workspaces)
+- [x] Exibição do logo do workspace na sidebar (placeholder)
+- [x] Layout responsivo (sidebar colapsável em mobile)
 
 **Commit final:** `feat: shell da aplicação autenticada (sidebar, navbar, workspace switcher)`
 
