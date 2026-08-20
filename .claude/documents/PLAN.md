@@ -105,10 +105,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir o registro de atividades e o Dashboard de métricas, tudo com dados mockados.
 
 **Entregas:**
-- [ ] Formulário de registro de atividade (Ligação, E-mail, Reunião, Nota)
-- [ ] Cards resumo (Total de Leads, Negócios Abertos, Valor Total do Pipeline, Taxa de Conversão)
-- [ ] Gráfico de funil de vendas (Recharts)
-- [ ] Painel de negócios do usuário logado com prazo próximo
+- [x] Formulário de registro de atividade (Ligação, E-mail, Reunião, Nota) — construído no M4, na página de detalhes do lead
+- [x] Cards resumo (Total de Leads, Negócios Abertos, Valor Total do Pipeline, Taxa de Conversão)
+- [x] Gráfico de funil de vendas (Recharts)
+- [x] Painel de negócios do usuário logado com prazo próximo
 
 **Commit final:** `feat: UI de atividades e dashboard de métricas`
 
