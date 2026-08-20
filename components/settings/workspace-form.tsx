@@ -19,21 +19,31 @@ export function WorkspaceForm() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  function revokePreview(url: string | null) {
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setFileError("Formato inválido. Envie PNG, JPG, SVG ou WebP.");
+      event.target.value = "";
       return;
     }
     if (file.size > MAX_SIZE_BYTES) {
       setFileError("O arquivo excede o tamanho máximo de 2MB.");
+      event.target.value = "";
       return;
     }
 
     setFileError(null);
-    setLogoPreview(URL.createObjectURL(file));
+    setLogoPreview((prev) => {
+      revokePreview(prev);
+      return URL.createObjectURL(file);
+    });
+    event.target.value = "";
   }
 
   async function handleSave() {
@@ -88,7 +98,12 @@ export function WorkspaceForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLogoPreview(null)}
+                  onClick={() =>
+                    setLogoPreview((prev) => {
+                      revokePreview(prev);
+                      return null;
+                    })
+                  }
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Remover
