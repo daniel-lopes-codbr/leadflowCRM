@@ -48,10 +48,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Telas de login, cadastro e onboarding com validação client-side, sem Supabase — estado local/mock.
 
 **Entregas:**
-- [ ] Tela de Login (form + validação)
-- [ ] Tela de Cadastro (form + validação)
-- [ ] Fluxo de Onboarding: criação obrigatória do primeiro Workspace
-- [ ] Estados de erro/loading mockados
+- [x] Tela de Login (form + validação)
+- [x] Tela de Cadastro (form + validação)
+- [x] Fluxo de Onboarding: criação obrigatória do primeiro Workspace
+- [x] Estados de erro/loading mockados
 
 **Commit final:** `feat: UI de autenticação e onboarding`
 
