@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -56,6 +57,15 @@ export function ActivityFormDialog({
       occurredAt: new Date().toISOString().slice(0, 16),
     },
   });
+
+  useEffect(() => {
+    if (!open) return;
+    reset({
+      type: "Nota",
+      description: "",
+      occurredAt: new Date().toISOString().slice(0, 16),
+    });
+  }, [open, reset]);
 
   async function submit(values: ActivityFormValues) {
     await new Promise((resolve) => setTimeout(resolve, 400));
