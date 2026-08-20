@@ -1,10 +1,15 @@
-export default function LeadsPage() {
+import { LeadsTable } from "@/components/leads/leads-table";
+
+export default function LeadsPage({ params }: { params: { workspaceId: string } }) {
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Leads</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Listagem, busca, filtros e detalhes de leads chegam no milestone M4.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Leads</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Centralize contatos, histórico e status de cada oportunidade.
+        </p>
+      </div>
+      <LeadsTable workspaceId={params.workspaceId} />
     </div>
   );
 }

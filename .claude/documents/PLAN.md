@@ -77,10 +77,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir listagem, busca/filtros, CRUD e página de detalhes de Lead, com dados mockados.
 
 **Entregas:**
-- [ ] Tabela de Leads com busca (texto) e filtros (Status, Responsável, Data de criação)
-- [ ] Modal/formulário de criação e edição de Lead (Nome, E-mail, Telefone, Empresa, Cargo, Status)
-- [ ] Página de detalhes do Lead (perfil consolidado)
-- [ ] Componente de Timeline de atividades (mock, ordem cronológica reversa)
+- [x] Tabela de Leads com busca (texto) e filtros (Status, Responsável, Data de criação)
+- [x] Modal/formulário de criação e edição de Lead (Nome, E-mail, Telefone, Empresa, Cargo, Status)
+- [x] Página de detalhes do Lead (perfil consolidado)
+- [x] Componente de Timeline de atividades (mock, ordem cronológica reversa)
 
 **Commit final:** `feat: UI de gestão de leads (listagem, CRUD, detalhes)`
 
