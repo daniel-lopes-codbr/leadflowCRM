@@ -91,10 +91,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Construir o Kanban de vendas com as 6 colunas fixas e drag-and-drop funcional em estado local (sem persistência real).
 
 **Entregas:**
-- [ ] Layout das 6 colunas fixas (Novo Lead, Contato Realizado, Proposta Enviada, Negociação, Fechado Ganho, Fechado Perdido)
-- [ ] Card de Deal (Título, Valor estimado, Lead vinculado, Responsável, Prazo)
-- [ ] Drag-and-drop entre colunas via `@dnd-kit` com atualização de estado local
-- [ ] Modal de criação/edição de Deal
+- [x] Layout das 6 colunas fixas (Novo Lead, Contato Realizado, Proposta Enviada, Negociação, Fechado Ganho, Fechado Perdido)
+- [x] Card de Deal (Título, Valor estimado, Lead vinculado, Responsável, Prazo)
+- [x] Drag-and-drop entre colunas via `@dnd-kit` com atualização de estado local
+- [x] Modal de criação/edição de Deal
 
 **Commit final:** `feat: UI do pipeline Kanban com drag-and-drop`
 
