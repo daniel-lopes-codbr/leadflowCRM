@@ -11,13 +11,13 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Inicializar a base técnica do projeto — Next.js, TypeScript, Tailwind, shadcn/ui e a estrutura de pastas definida no `CLAUDE.md` — sem nenhuma lógica de negócio ainda.
 
 **Entregas:**
-- [ ] Inicializar Next.js 14 (App Router) + React 18 + TypeScript 5
-- [ ] Configurar Tailwind CSS com tema (paleta indigo/slate do `CLAUDE.md`)
-- [ ] Instalar e configurar shadcn/ui + Lucide Icons
-- [ ] Configurar ESLint + Prettier
-- [ ] Criar estrutura de pastas (`app/`, `components/`, `lib/`, `types/`) conforme `CLAUDE.md`
-- [ ] Criar `.env.example` com placeholders (Supabase, Stripe, Resend)
-- [ ] README com instruções de setup local
+- [x] Inicializar Next.js 14 (App Router) + React 18 + TypeScript 5
+- [x] Configurar Tailwind CSS com tema (paleta indigo/slate do `CLAUDE.md`)
+- [x] Instalar e configurar shadcn/ui + Lucide Icons
+- [x] Configurar ESLint + Prettier
+- [x] Criar estrutura de pastas (`app/`, `components/`, `lib/`, `types/`) conforme `CLAUDE.md`
+- [x] Criar `.env.example` com placeholders (Supabase, Stripe, Resend)
+- [x] README com instruções de setup local
 
 **Commit final:** `chore: setup inicial do projeto Next.js + Tailwind + shadcn/ui`
 
