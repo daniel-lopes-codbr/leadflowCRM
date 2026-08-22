@@ -135,10 +135,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Provisionar o Supabase, modelar o schema multi-tenant e configurar Row Level Security.
 
 **Entregas:**
-- [ ] Provisionar projeto Supabase + configurar clients (server/browser) em `lib/supabase/`
-- [ ] Migrations: `workspaces`, `memberships`, `leads`, `deals`, `activities`, `audit_logs`
-- [ ] Políticas de RLS por `workspace_id` em todas as tabelas
-- [ ] Seed de dados de desenvolvimento
+- [x] Provisionar projeto Supabase + configurar clients (server/browser) em `lib/supabase/`
+- [x] Migrations: `workspaces`, `memberships`, `leads`, `deals`, `activities`, `audit_logs`
+- [x] Políticas de RLS por `workspace_id` em todas as tabelas
+- [x] Seed de dados de desenvolvimento (local, via `supabase db reset` — nunca contra o projeto hospedado)
 
 **Commit final:** `feat: schema do banco e RLS multi-tenant no Supabase`
 
