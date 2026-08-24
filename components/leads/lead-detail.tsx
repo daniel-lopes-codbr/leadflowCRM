@@ -2,9 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, Mail, Phone, Plus, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Building2, Loader2, Mail, Phone, Plus, Trash2, User } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createActivity, deleteLead } from "@/app/(app)/[workspaceId]/leads/actions";
 import {
   ActivityFormDialog,
   type ActivityFormValues,
@@ -17,38 +29,54 @@ import type { Lead } from "@/types/lead";
 export function LeadDetail({
   workspaceId,
   lead,
-  initialActivities,
+  activities,
 }: {
   workspaceId: string;
   lead: Lead;
-  initialActivities: Activity[];
+  activities: Activity[];
 }) {
-  const [activities, setActivities] = useState(initialActivities);
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  function handleSubmit(values: ActivityFormValues) {
-    setActivities((prev) =>
-      [
-        {
-          id: `a${Date.now()}`,
-          leadId: lead.id,
-          authorName: "Você",
-          ...values,
-        },
-        ...prev,
-      ].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-    );
+  async function handleActivitySubmit(values: ActivityFormValues) {
+    const result = await createActivity(workspaceId, lead.id, values);
+    if (result.status === "success") {
+      router.refresh();
+    }
+    return result;
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteLead(workspaceId, lead.id);
+    setDeleting(false);
+    if (result.status === "success") {
+      router.push(`/${workspaceId}/leads`);
+    }
   }
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/${workspaceId}/leads`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar para leads
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/${workspaceId}/leads`}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para leads
+        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          onClick={() => setDeleteOpen(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Excluir lead
+        </Button>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <Card className="h-fit">
@@ -95,7 +123,30 @@ export function LeadDetail({
         </div>
       </div>
 
-      <ActivityFormDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmit={handleSubmit} />
+      <ActivityFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSubmit={handleActivitySubmit}
+      />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {lead.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O lead e todo o histórico de atividades serão excluídos permanentemente. Essa ação
+              não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockOwners } from "@/components/leads/data";
+import type { LeadActionResult } from "@/app/(app)/[workspaceId]/leads/actions";
 import { LEAD_STATUSES, type Lead, type LeadStatus } from "@/types/lead";
 
 const leadSchema = z.object({
@@ -41,13 +43,18 @@ export function LeadFormDialog({
   open,
   onOpenChange,
   lead,
+  members,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead?: Lead | null;
-  onSubmit: (values: LeadFormValues) => void;
+  members: { id: string; name: string }[];
+  onSubmit: (values: LeadFormValues) => Promise<LeadActionResult>;
 }) {
+  const [serverError, setServerError] = useState<string | null>(null);
+  const defaultOwnerId = members[0]?.id ?? "";
+
   const {
     register,
     handleSubmit,
@@ -64,12 +71,13 @@ export function LeadFormDialog({
       company: "",
       role: "",
       status: "Novo Lead",
-      ownerId: mockOwners[0].id,
+      ownerId: defaultOwnerId,
     },
   });
 
   useEffect(() => {
     if (!open) return;
+    setServerError(null);
     reset(
       lead
         ? {
@@ -88,14 +96,19 @@ export function LeadFormDialog({
             company: "",
             role: "",
             status: "Novo Lead",
-            ownerId: mockOwners[0].id,
+            ownerId: defaultOwnerId,
           }
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lead, reset]);
 
   async function submit(values: LeadFormValues) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    onSubmit(values);
+    setServerError(null);
+    const result = await onSubmit(values);
+    if (result.status === "error") {
+      setServerError(result.message);
+      return;
+    }
     onOpenChange(false);
   }
 
@@ -112,6 +125,13 @@ export function LeadFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+          {serverError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{serverError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="name">Nome</Label>
@@ -174,13 +194,16 @@ export function LeadFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockOwners.map((owner) => (
-                    <SelectItem key={owner.id} value={owner.id}>
-                      {owner.name}
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {errors.ownerId && (
+                <p className="text-xs text-destructive">{errors.ownerId.message}</p>
+              )}
             </div>
           </div>
 
