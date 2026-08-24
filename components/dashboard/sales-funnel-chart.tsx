@@ -12,10 +12,13 @@ const funnelStages: LeadStatus[] = [
   "Fechado Ganho",
 ];
 
+// --chart-1 e --primary têm o mesmo valor oklch (mesmo tom), então "Proposta
+// Enviada" usa um roxo/indigo intermediário próprio em vez de --primary, pra
+// não repetir a cor de "Novo Lead" nem se aproximar de --chart-3/--chart-4.
 const stageColors = [
   "var(--chart-1)",
   "var(--chart-3)",
-  "var(--primary)",
+  "oklch(0.6 0.23 276.96)",
   "var(--chart-4)",
   "var(--success)",
 ];
