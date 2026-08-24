@@ -163,10 +163,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Conectar o CRUD de Leads (M4) e o registro de Atividades (M6) a Server Actions reais.
 
 **Entregas:**
-- [ ] Server Actions: criar/editar/excluir Lead
-- [ ] Busca e filtros server-side
-- [ ] Server Actions: registrar Atividade (timeline real)
-- [ ] Enforce no backend do hard limit de leads do plano Free
+- [x] Server Actions: criar/editar/excluir Lead
+- [x] Busca e filtros server-side
+- [x] Server Actions: registrar Atividade (timeline real)
+- [x] Enforce no backend do hard limit de leads do plano Free
 
 **Commit final:** `feat: backend de leads e atividades conectado ao Supabase`
 

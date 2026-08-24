@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Pencil, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,37 +21,46 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockLeads, mockOwners } from "@/components/leads/data";
+import { createLead, updateLead } from "@/app/(app)/[workspaceId]/leads/actions";
 import { LeadFormDialog, type LeadFormValues } from "@/components/leads/lead-form-dialog";
 import { StatusBadge } from "@/components/leads/status-badge";
 import { LEAD_STATUSES, type Lead } from "@/types/lead";
 
 const ALL = "all";
 
-export function LeadsTable({ workspaceId }: { workspaceId: string }) {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(ALL);
-  const [ownerFilter, setOwnerFilter] = useState<string>(ALL);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+type LeadFilters = { search: string; status: string; ownerId: string; from: string; to: string };
+type Member = { id: string; name: string };
+
+export function LeadsTable({
+  workspaceId,
+  leads,
+  members,
+  filters,
+}: {
+  workspaceId: string;
+  leads: Lead[];
+  members: Member[];
+  filters: LeadFilters;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchInput, setSearchInput] = useState(filters.search);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      const matchesSearch =
-        search.trim().length === 0 ||
-        [lead.name, lead.email, lead.company].some((field) =>
-          field.toLowerCase().includes(search.trim().toLowerCase())
-        );
-      const matchesStatus = statusFilter === ALL || lead.status === statusFilter;
-      const matchesOwner = ownerFilter === ALL || lead.ownerId === ownerFilter;
-      const matchesFrom = !dateFrom || lead.createdAt >= dateFrom;
-      const matchesTo = !dateTo || lead.createdAt <= dateTo;
-      return matchesSearch && matchesStatus && matchesOwner && matchesFrom && matchesTo;
-    });
-  }, [leads, search, statusFilter, ownerFilter, dateFrom, dateTo]);
+  function updateParam(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== ALL) params.set(key, value);
+    else params.delete(key);
+    router.push(`?${params.toString()}`);
+  }
+
+  useEffect(() => {
+    if (searchInput === filters.search) return;
+    const handle = setTimeout(() => updateParam("search", searchInput), 350);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   function openCreateDialog() {
     setEditingLead(null);
@@ -62,27 +72,15 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
     setDialogOpen(true);
   }
 
-  function handleSubmit(values: LeadFormValues) {
-    const owner = mockOwners.find((o) => o.id === values.ownerId)!;
+  async function handleSubmit(values: LeadFormValues) {
+    const result = editingLead
+      ? await updateLead(workspaceId, editingLead.id, values)
+      : await createLead(workspaceId, values);
 
-    if (editingLead) {
-      setLeads((prev) =>
-        prev.map((lead) =>
-          lead.id === editingLead.id ? { ...lead, ...values, ownerName: owner.name } : lead
-        )
-      );
-      return;
+    if (result.status === "success") {
+      router.refresh();
     }
-
-    setLeads((prev) => [
-      {
-        id: `l${Date.now()}`,
-        ...values,
-        ownerName: owner.name,
-        createdAt: new Date().toISOString().slice(0, 10),
-      },
-      ...prev,
-    ]);
+    return result;
   }
 
   return (
@@ -93,13 +91,16 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, e-mail ou empresa"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
               className="pl-8"
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={filters.status || ALL}
+            onValueChange={(value) => updateParam("status", value)}
+          >
             <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -113,15 +114,18 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
             </SelectContent>
           </Select>
 
-          <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+          <Select
+            value={filters.ownerId || ALL}
+            onValueChange={(value) => updateParam("ownerId", value)}
+          >
             <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Responsável" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>Todos os responsáveis</SelectItem>
-              {mockOwners.map((owner) => (
-                <SelectItem key={owner.id} value={owner.id}>
-                  {owner.name}
+              {members.map((member) => (
+                <SelectItem key={member.id} value={member.id}>
+                  {member.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -130,16 +134,16 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
           <div className="flex items-center gap-2">
             <Input
               type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
+              value={filters.from}
+              onChange={(event) => updateParam("from", event.target.value)}
               className="w-full sm:w-36"
               aria-label="Criado a partir de"
             />
             <span className="text-sm text-muted-foreground">até</span>
             <Input
               type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
+              value={filters.to}
+              onChange={(event) => updateParam("to", event.target.value)}
               className="w-full sm:w-36"
               aria-label="Criado até"
             />
@@ -165,14 +169,14 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.length === 0 && (
+            {leads.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                   Nenhum lead encontrado com esses filtros.
                 </TableCell>
               </TableRow>
             )}
-            {filteredLeads.map((lead) => (
+            {leads.map((lead) => (
               <TableRow key={lead.id} className="group">
                 <TableCell>
                   <Link
@@ -216,6 +220,7 @@ export function LeadsTable({ workspaceId }: { workspaceId: string }) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         lead={editingLead}
+        members={members}
         onSubmit={handleSubmit}
       />
     </div>

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { LeadActionResult } from "@/app/(app)/[workspaceId]/leads/actions";
 import { ACTIVITY_TYPES, type ActivityType } from "@/types/activity";
 
 const activitySchema = z.object({
@@ -40,8 +43,10 @@ export function ActivityFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: ActivityFormValues) => void;
+  onSubmit: (values: ActivityFormValues) => Promise<LeadActionResult>;
 }) {
+  const [serverError, setServerError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -60,6 +65,7 @@ export function ActivityFormDialog({
 
   useEffect(() => {
     if (!open) return;
+    setServerError(null);
     reset({
       type: "Nota",
       description: "",
@@ -68,9 +74,12 @@ export function ActivityFormDialog({
   }, [open, reset]);
 
   async function submit(values: ActivityFormValues) {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    onSubmit(values);
-    reset();
+    setServerError(null);
+    const result = await onSubmit(values);
+    if (result.status === "error") {
+      setServerError(result.message);
+      return;
+    }
     onOpenChange(false);
   }
 
@@ -83,6 +92,13 @@ export function ActivityFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+          {serverError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{serverError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
