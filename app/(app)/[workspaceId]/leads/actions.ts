@@ -2,11 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { PLAN_LIMITS } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVITY_TYPES } from "@/types/activity";
 import { LEAD_STATUSES } from "@/types/lead";
-
-const FREE_PLAN_LEAD_LIMIT = 25;
 
 export type LeadActionResult = { status: "success" } | { status: "error"; message: string };
 
@@ -56,16 +55,17 @@ export async function createLead(workspaceId: string, input: unknown): Promise<L
     return { status: "error", message: "Workspace não encontrado." };
   }
 
-  if (workspace.plan === "free") {
+  const leadLimit = PLAN_LIMITS[workspace.plan === "pro" ? "pro" : "free"].leads;
+  if (Number.isFinite(leadLimit)) {
     const { count } = await supabase
       .from("leads")
       .select("id", { count: "exact", head: true })
       .eq("workspace_id", workspaceId);
 
-    if ((count ?? 0) >= FREE_PLAN_LEAD_LIMIT) {
+    if ((count ?? 0) >= leadLimit) {
       return {
         status: "error",
-        message: `O plano Free permite até ${FREE_PLAN_LEAD_LIMIT} leads. Faça upgrade para o Pro para cadastrar mais.`,
+        message: `O plano Free permite até ${leadLimit} leads. Faça upgrade para o Pro para cadastrar mais.`,
       };
     }
   }

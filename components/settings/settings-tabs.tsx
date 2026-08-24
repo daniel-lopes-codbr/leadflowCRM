@@ -2,12 +2,28 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPrivacyPanel } from "@/components/settings/data-privacy-panel";
-import { MembersPanel } from "@/components/settings/members-panel";
+import { MembersPanel, type Member, type PendingInvite } from "@/components/settings/members-panel";
 import { PlansPanel } from "@/components/settings/plans-panel";
 import { WorkspaceForm } from "@/components/settings/workspace-form";
-import { mockUsage } from "@/components/settings/data";
+import type { WorkspacePlan } from "@/lib/plans";
 
-export function SettingsTabs({ workspaceId }: { workspaceId: string }) {
+export function SettingsTabs({
+  workspaceId,
+  workspace,
+  members,
+  pendingInvites,
+  currentUserId,
+  isAdmin,
+  leadsUsed,
+}: {
+  workspaceId: string;
+  workspace: { name: string; logoUrl: string | null; plan: WorkspacePlan };
+  members: Member[];
+  pendingInvites: PendingInvite[];
+  currentUserId: string;
+  isAdmin: boolean;
+  leadsUsed: number;
+}) {
   return (
     <Tabs defaultValue="workspace">
       <TabsList>
@@ -18,15 +34,22 @@ export function SettingsTabs({ workspaceId }: { workspaceId: string }) {
       </TabsList>
 
       <TabsContent value="workspace" className="mt-6 max-w-lg">
-        <WorkspaceForm />
+        <WorkspaceForm workspaceId={workspaceId} workspace={workspace} isAdmin={isAdmin} />
       </TabsContent>
 
       <TabsContent value="members" className="mt-6 max-w-lg">
-        <MembersPanel workspaceId={workspaceId} plan={mockUsage.plan} />
+        <MembersPanel
+          workspaceId={workspaceId}
+          plan={workspace.plan}
+          members={members}
+          pendingInvites={pendingInvites}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+        />
       </TabsContent>
 
       <TabsContent value="plans" className="mt-6">
-        <PlansPanel />
+        <PlansPanel plan={workspace.plan} membersUsed={members.length} leadsUsed={leadsUsed} />
       </TabsContent>
 
       <TabsContent value="data" className="mt-6 max-w-lg">

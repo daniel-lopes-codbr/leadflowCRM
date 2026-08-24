@@ -1,29 +1,44 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CheckCircle2, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, CheckCircle2, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockWorkspace } from "@/components/settings/data";
+import { updateWorkspace } from "@/app/(app)/[workspaceId]/settings/actions";
+import { compressImage } from "@/lib/image/compress-image";
+import type { WorkspacePlan } from "@/lib/plans";
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 
-export function WorkspaceForm() {
+export function WorkspaceForm({
+  workspaceId,
+  workspace,
+  isAdmin,
+}: {
+  workspaceId: string;
+  workspace: { name: string; logoUrl: string | null; plan: WorkspacePlan };
+  isAdmin: boolean;
+}) {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState(mockWorkspace.name);
-  const [logoPreview, setLogoPreview] = useState<string | null>(mockWorkspace.logoUrl);
+  const [name, setName] = useState(workspace.name);
+  const [logoPreview, setLogoPreview] = useState<string | null>(workspace.logoUrl);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [serverError, setServerError] = useState<string | null>(null);
 
   function revokePreview(url: string | null) {
     if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -39,17 +54,47 @@ export function WorkspaceForm() {
     }
 
     setFileError(null);
+    const compressed = await compressImage(file);
+    setPendingFile(compressed);
+    setLogoRemoved(false);
     setLogoPreview((prev) => {
       revokePreview(prev);
-      return URL.createObjectURL(file);
+      return URL.createObjectURL(compressed);
     });
     event.target.value = "";
   }
 
+  function handleRemoveLogo() {
+    setPendingFile(null);
+    setLogoRemoved(true);
+    setLogoPreview((prev) => {
+      revokePreview(prev);
+      return null;
+    });
+  }
+
   async function handleSave() {
     setStatus("saving");
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    setServerError(null);
+
+    const formData = new FormData();
+    formData.set("workspaceId", workspaceId);
+    formData.set("name", name);
+    formData.set("removeLogo", String(logoRemoved));
+    if (pendingFile) formData.set("logo", pendingFile);
+
+    const result = await updateWorkspace(formData);
+
+    if (result.status === "error") {
+      setStatus("idle");
+      setServerError(result.message);
+      return;
+    }
+
     setStatus("saved");
+    setPendingFile(null);
+    setLogoRemoved(false);
+    router.refresh();
   }
 
   return (
@@ -64,9 +109,13 @@ export function WorkspaceForm() {
         {status === "saved" && (
           <Alert variant="success">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>
-              Alterações salvas (mock — persistência chega no M13).
-            </AlertDescription>
+            <AlertDescription>Alterações salvas.</AlertDescription>
+          </Alert>
+        )}
+        {serverError && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
@@ -89,6 +138,7 @@ export function WorkspaceForm() {
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={!isAdmin}
                 onClick={() => fileInputRef.current?.click()}
               >
                 Enviar logo
@@ -98,12 +148,8 @@ export function WorkspaceForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
-                    setLogoPreview((prev) => {
-                      revokePreview(prev);
-                      return null;
-                    })
-                  }
+                  disabled={!isAdmin}
+                  onClick={handleRemoveLogo}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Remover
@@ -127,11 +173,18 @@ export function WorkspaceForm() {
           <Input
             id="workspace-name"
             value={name}
+            disabled={!isAdmin}
             onChange={(event) => setName(event.target.value)}
           />
         </div>
 
-        <Button onClick={handleSave} disabled={status === "saving"}>
+        {!isAdmin && (
+          <p className="text-xs text-muted-foreground">
+            Só administradores podem editar o workspace.
+          </p>
+        )}
+
+        <Button onClick={handleSave} disabled={!isAdmin || status === "saving"}>
           {status === "saving" && <Loader2 className="h-4 w-4 animate-spin" />}
           Salvar alterações
         </Button>

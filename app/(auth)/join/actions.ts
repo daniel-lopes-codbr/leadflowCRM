@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { PLAN_LIMITS } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,29 @@ export async function acceptInvite(token: string) {
       token,
       `Este convite foi enviado para ${invite.email}, mas você está logado como ${user.email}.`
     );
+  }
+
+  const { data: workspace } = await admin
+    .from("workspaces")
+    .select("plan")
+    .eq("id", invite.workspace_id)
+    .single();
+
+  const plan = workspace?.plan === "pro" ? "pro" : "free";
+  const memberLimit = PLAN_LIMITS[plan].members;
+
+  if (Number.isFinite(memberLimit)) {
+    const { count: memberCount } = await admin
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", invite.workspace_id);
+
+    if ((memberCount ?? 0) >= memberLimit) {
+      failWith(
+        token,
+        `O plano ${plan === "free" ? "Free" : "Pro"} deste workspace já atingiu o limite de colaboradores.`
+      );
+    }
   }
 
   const { error: membershipError } = await admin

@@ -3,10 +3,17 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/shell/sidebar";
+import type { WorkspaceOption } from "@/components/shell/workspace-switcher";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-export function MobileNav({ workspaceId }: { workspaceId: string }) {
+export function MobileNav({
+  workspaceId,
+  workspaces,
+}: {
+  workspaceId: string;
+  workspaces: WorkspaceOption[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -18,7 +25,11 @@ export function MobileNav({ workspaceId }: { workspaceId: string }) {
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0">
         <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-        <Sidebar workspaceId={workspaceId} onNavigate={() => setOpen(false)} />
+        <Sidebar
+          workspaceId={workspaceId}
+          workspaces={workspaces}
+          onNavigate={() => setOpen(false)}
+        />
       </SheetContent>
     </Sheet>
   );

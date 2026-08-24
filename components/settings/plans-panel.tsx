@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { mockUsage, planLimits } from "@/components/settings/data";
+import { PLAN_LIMITS, type WorkspacePlan } from "@/lib/plans";
 
 const plans = [
   {
@@ -29,10 +29,18 @@ const plans = [
   },
 ];
 
-export function PlansPanel() {
+export function PlansPanel({
+  plan,
+  membersUsed,
+  leadsUsed,
+}: {
+  plan: WorkspacePlan;
+  membersUsed: number;
+  leadsUsed: number;
+}) {
   const [upgrading, setUpgrading] = useState(false);
-  const currentPlan = mockUsage.plan;
-  const limits = planLimits[currentPlan];
+  const currentPlan = plan;
+  const limits = PLAN_LIMITS[currentPlan];
 
   async function handleUpgrade() {
     setUpgrading(true);
@@ -53,22 +61,22 @@ export function PlansPanel() {
               <div className="mb-1.5 flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Colaboradores</span>
                 <span className="font-medium text-foreground">
-                  {mockUsage.membersUsed} / {limits.members}
+                  {membersUsed} / {limits.members}
                 </span>
               </div>
               <Progress
-                value={Math.min((mockUsage.membersUsed / limits.members) * 100, 100)}
-                className={mockUsage.membersUsed >= limits.members ? "[&>div]:bg-destructive" : ""}
+                value={Math.min((membersUsed / limits.members) * 100, 100)}
+                className={membersUsed >= limits.members ? "[&>div]:bg-destructive" : ""}
               />
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Leads</span>
                 <span className="font-medium text-foreground">
-                  {mockUsage.leadsUsed} / {limits.leads}
+                  {leadsUsed} / {limits.leads}
                 </span>
               </div>
-              <Progress value={Math.min((mockUsage.leadsUsed / limits.leads) * 100, 100)} />
+              <Progress value={Math.min((leadsUsed / limits.leads) * 100, 100)} />
             </div>
           </CardContent>
         </Card>
