@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockLeads, mockOwners } from "@/components/leads/data";
+import type { DealActionResult } from "@/app/(app)/[workspaceId]/pipeline/actions";
 import { LEAD_STATUSES, type LeadStatus } from "@/types/lead";
 import type { Deal } from "@/types/deal";
 
@@ -37,19 +39,30 @@ const dealSchema = z.object({
 
 export type DealFormValues = z.infer<typeof dealSchema>;
 
+type LeadOption = { id: string; name: string; company: string };
+type Member = { id: string; name: string };
+
 export function DealFormDialog({
   open,
   onOpenChange,
   deal,
   defaultStatus,
+  leads,
+  members,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   deal?: Deal | null;
   defaultStatus?: LeadStatus;
-  onSubmit: (values: DealFormValues) => void;
+  leads: LeadOption[];
+  members: Member[];
+  onSubmit: (values: DealFormValues) => Promise<DealActionResult>;
 }) {
+  const [serverError, setServerError] = useState<string | null>(null);
+  const defaultLeadId = leads[0]?.id ?? "";
+  const defaultOwnerId = members[0]?.id ?? "";
+
   const {
     register,
     handleSubmit,
@@ -62,8 +75,8 @@ export function DealFormDialog({
     defaultValues: {
       title: "",
       value: 0,
-      leadId: mockLeads[0].id,
-      ownerId: mockOwners[0].id,
+      leadId: defaultLeadId,
+      ownerId: defaultOwnerId,
       deadline: "",
       status: defaultStatus ?? "Novo Lead",
     },
@@ -71,6 +84,7 @@ export function DealFormDialog({
 
   useEffect(() => {
     if (!open) return;
+    setServerError(null);
     reset(
       deal
         ? {
@@ -84,17 +98,22 @@ export function DealFormDialog({
         : {
             title: "",
             value: 0,
-            leadId: mockLeads[0].id,
-            ownerId: mockOwners[0].id,
+            leadId: defaultLeadId,
+            ownerId: defaultOwnerId,
             deadline: "",
             status: defaultStatus ?? "Novo Lead",
           }
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, deal, defaultStatus, reset]);
 
   async function submit(values: DealFormValues) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    onSubmit(values);
+    setServerError(null);
+    const result = await onSubmit(values);
+    if (result.status === "error") {
+      setServerError(result.message);
+      return;
+    }
     onOpenChange(false);
   }
 
@@ -109,6 +128,13 @@ export function DealFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+          {serverError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{serverError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="title">Título</Label>
             <Input id="title" aria-invalid={!!errors.title} {...register("title")} />
@@ -150,13 +176,14 @@ export function DealFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {mockLeads.map((lead) => (
+                {leads.map((lead) => (
                   <SelectItem key={lead.id} value={lead.id}>
                     {lead.name} · {lead.company}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {errors.leadId && <p className="text-xs text-destructive">{errors.leadId.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -170,9 +197,9 @@ export function DealFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockOwners.map((owner) => (
-                    <SelectItem key={owner.id} value={owner.id}>
-                      {owner.name}
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
