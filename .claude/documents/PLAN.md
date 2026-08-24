@@ -149,10 +149,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Conectar as telas do M2 ao Supabase Auth, criar workspace real no onboarding e proteger rotas.
 
 **Entregas:**
-- [ ] Integração Supabase Auth (login, cadastro, sessão) nas telas do M2
-- [ ] Middleware de proteção de rotas autenticadas por workspace
-- [ ] Criação real de Workspace + membership Admin no onboarding
-- [ ] Envio de convite de membro via Resend (conectando a tela de membros do M7)
+- [x] Integração Supabase Auth (login, cadastro, sessão) nas telas do M2
+- [x] Middleware de proteção de rotas autenticadas por workspace
+- [x] Criação real de Workspace + membership Admin no onboarding
+- [x] Envio de convite de membro via Resend (conectando a tela de membros do M7) — via tabela `invites` com token, para evitar auto-promoção em workspace alheio
 
 **Commit final:** `feat: autenticação real e onboarding conectados ao Supabase`
 

@@ -7,7 +7,7 @@ import { PlansPanel } from "@/components/settings/plans-panel";
 import { WorkspaceForm } from "@/components/settings/workspace-form";
 import { mockUsage } from "@/components/settings/data";
 
-export function SettingsTabs() {
+export function SettingsTabs({ workspaceId }: { workspaceId: string }) {
   return (
     <Tabs defaultValue="workspace">
       <TabsList>
@@ -22,7 +22,7 @@ export function SettingsTabs() {
       </TabsContent>
 
       <TabsContent value="members" className="mt-6 max-w-lg">
-        <MembersPanel plan={mockUsage.plan} />
+        <MembersPanel workspaceId={workspaceId} plan={mockUsage.plan} />
       </TabsContent>
 
       <TabsContent value="plans" className="mt-6">

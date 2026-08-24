@@ -1,6 +1,6 @@
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 
-export default function SettingsPage() {
+export default function SettingsPage({ params }: { params: { workspaceId: string } }) {
   return (
     <div className="space-y-6">
       <div>
@@ -9,7 +9,7 @@ export default function SettingsPage() {
           Gerencie o workspace, sua equipe, o plano e a privacidade dos dados.
         </p>
       </div>
-      <SettingsTabs />
+      <SettingsTabs workspaceId={params.workspaceId} />
     </div>
   );
 }

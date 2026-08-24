@@ -11,23 +11,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logout } from "@/app/(auth)/actions";
 
-export function UserMenu({ workspaceId }: { workspaceId: string }) {
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export function UserMenu({
+  workspaceId,
+  name,
+  email,
+}: {
+  workspaceId: string;
+  name: string;
+  email: string;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-              AM
+              {initials(name)}
             </AvatarFallback>
           </Avatar>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-sm font-medium text-foreground">Ana Martins</p>
-          <p className="text-xs text-muted-foreground">ana@leadflow.com</p>
+          <p className="truncate text-sm font-medium text-foreground">{name}</p>
+          <p className="truncate text-xs text-muted-foreground">{email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -43,11 +61,9 @@ export function UserMenu({ workspaceId }: { workspaceId: string }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Link>
+        <DropdownMenuItem onSelect={() => logout()}>
+          <LogOut className="h-4 w-4" />
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

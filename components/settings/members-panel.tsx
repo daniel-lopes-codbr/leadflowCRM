@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { AlertTriangle, Loader2, Trash2, UserPlus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Trash2, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,11 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockMembers, planLimits, type Member, type MemberRole } from "@/components/settings/data";
+import { mockMembers, planLimits, type Member } from "@/components/settings/data";
+import { inviteMember } from "@/app/(app)/[workspaceId]/settings/actions";
 
 const inviteSchema = z.object({
   email: z.string().min(1, "Informe o e-mail.").email("Digite um e-mail válido."),
-  role: z.enum(["Admin", "Membro"]),
+  role: z.enum(["admin", "member"]),
 });
 
 type InviteValues = z.infer<typeof inviteSchema>;
@@ -45,9 +46,10 @@ function initials(name: string) {
     .join("");
 }
 
-export function MembersPanel({ plan }: { plan: "free" | "pro" }) {
+export function MembersPanel({ workspaceId, plan }: { workspaceId: string; plan: "free" | "pro" }) {
   const [members, setMembers] = useState<Member[]>(mockMembers);
   const [removing, setRemoving] = useState<Member | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const limit = planLimits[plan].members;
   const atLimit = members.length >= limit;
@@ -61,21 +63,26 @@ export function MembersPanel({ plan }: { plan: "free" | "pro" }) {
     formState: { errors, isSubmitting },
   } = useForm<InviteValues>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "", role: "Membro" },
+    defaultValues: { email: "", role: "member" },
   });
 
   async function onInvite(values: InviteValues) {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setMembers((prev) => [
-      ...prev,
-      {
-        id: `u${Date.now()}`,
-        name: values.email.split("@")[0],
-        email: values.email,
-        role: values.role,
-      },
-    ]);
-    reset();
+    setInviteResult(null);
+    const result = await inviteMember({ workspaceId, email: values.email, role: values.role });
+    setInviteResult({ ok: result.status === "success", message: result.message });
+
+    if (result.status === "success") {
+      setMembers((prev) => [
+        ...prev,
+        {
+          id: `pending-${Date.now()}`,
+          name: values.email.split("@")[0],
+          email: values.email,
+          role: values.role === "admin" ? "Admin" : "Membro",
+        },
+      ]);
+      reset();
+    }
   }
 
   function confirmRemove() {
@@ -104,6 +111,17 @@ export function MembersPanel({ plan }: { plan: "free" | "pro" }) {
           </Alert>
         )}
 
+        {inviteResult && (
+          <Alert variant={inviteResult.ok ? "success" : "destructive"}>
+            {inviteResult.ok ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            <AlertDescription>{inviteResult.message}</AlertDescription>
+          </Alert>
+        )}
+
         <form
           onSubmit={handleSubmit(onInvite)}
           className="flex flex-col gap-3 sm:flex-row sm:items-start"
@@ -122,15 +140,15 @@ export function MembersPanel({ plan }: { plan: "free" | "pro" }) {
           </div>
           <Select
             value={watch("role")}
-            onValueChange={(value) => setValue("role", value as MemberRole)}
+            onValueChange={(value) => setValue("role", value as "admin" | "member")}
             disabled={atLimit}
           >
             <SelectTrigger className="w-full sm:w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Membro">Membro</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="member">Membro</SelectItem>
             </SelectContent>
           </Select>
           <Button type="submit" disabled={atLimit || isSubmitting} className="shrink-0">

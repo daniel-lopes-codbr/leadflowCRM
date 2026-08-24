@@ -1,15 +1,22 @@
 -- LeadFlow CRM — Row Level Security (isolamento de tenants por workspace_id)
 -- Ver PRD §4.2: "queries não devem vazar dados de um workspace_id para outro".
+--
+-- Idempotente de propósito (create or replace / drop policy if exists): pode
+-- ser rodado de novo com segurança se uma execução anterior parou no meio.
 
 -- Helpers ------------------------------------------------------------------
--- security invoker (padrão): dependem de memberships já estar filtrado pela
--- própria RLS de memberships (policy "memberships_select_own_or_admin"),
--- então não há recursão nem elevação de privilégio aqui.
+-- security definer é obrigatório aqui: a policy de SELECT de `memberships`
+-- chama is_workspace_admin(), que também consulta `memberships` — com
+-- security invoker essa segunda consulta reativa a mesma policy RLS
+-- recursivamente (erro "stack depth limit exceeded"). Como definer, a
+-- consulta interna roda com os privilégios do dono da função (ignora RLS),
+-- o que é seguro aqui porque a função só devolve um boolean derivado de
+-- auth.uid() — nunca expõe linhas de outra tabela para quem chama.
 
-create function public.is_workspace_member(target_workspace_id uuid)
+create or replace function public.is_workspace_member(target_workspace_id uuid)
 returns boolean
 language sql
-security invoker
+security definer
 stable
 set search_path = public
 as $$
@@ -20,10 +27,10 @@ as $$
   );
 $$;
 
-create function public.is_workspace_admin(target_workspace_id uuid)
+create or replace function public.is_workspace_admin(target_workspace_id uuid)
 returns boolean
 language sql
-security invoker
+security definer
 stable
 set search_path = public
 as $$
@@ -39,22 +46,26 @@ $$;
 
 alter table public.workspaces enable row level security;
 
+drop policy if exists workspaces_select_member on public.workspaces;
 create policy workspaces_select_member
   on public.workspaces for select
   to authenticated
   using (public.is_workspace_member(id));
 
+drop policy if exists workspaces_insert_any_authenticated on public.workspaces;
 create policy workspaces_insert_any_authenticated
   on public.workspaces for insert
   to authenticated
   with check (true);
 
+drop policy if exists workspaces_update_admin on public.workspaces;
 create policy workspaces_update_admin
   on public.workspaces for update
   to authenticated
   using (public.is_workspace_admin(id))
   with check (public.is_workspace_admin(id));
 
+drop policy if exists workspaces_delete_admin on public.workspaces;
 create policy workspaces_delete_admin
   on public.workspaces for delete
   to authenticated
@@ -66,6 +77,7 @@ grant select, insert, update, delete on public.workspaces to authenticated;
 
 alter table public.memberships enable row level security;
 
+drop policy if exists memberships_select_own_or_admin on public.memberships;
 create policy memberships_select_own_or_admin
   on public.memberships for select
   to authenticated
@@ -74,6 +86,7 @@ create policy memberships_select_own_or_admin
 -- Bootstrap: o criador do workspace ainda não é admin (nenhuma membership
 -- existe), então ele pode criar a própria membership inicial. Depois disso,
 -- só admins podem inserir novas memberships (convites).
+drop policy if exists memberships_insert_bootstrap_or_admin on public.memberships;
 create policy memberships_insert_bootstrap_or_admin
   on public.memberships for insert
   to authenticated
@@ -88,12 +101,14 @@ create policy memberships_insert_bootstrap_or_admin
     or public.is_workspace_admin(workspace_id)
   );
 
+drop policy if exists memberships_update_admin on public.memberships;
 create policy memberships_update_admin
   on public.memberships for update
   to authenticated
   using (public.is_workspace_admin(workspace_id))
   with check (public.is_workspace_admin(workspace_id));
 
+drop policy if exists memberships_delete_admin_or_self on public.memberships;
 create policy memberships_delete_admin_or_self
   on public.memberships for delete
   to authenticated
@@ -105,22 +120,26 @@ grant select, insert, update, delete on public.memberships to authenticated;
 
 alter table public.leads enable row level security;
 
+drop policy if exists leads_select_member on public.leads;
 create policy leads_select_member
   on public.leads for select
   to authenticated
   using (public.is_workspace_member(workspace_id));
 
+drop policy if exists leads_insert_member on public.leads;
 create policy leads_insert_member
   on public.leads for insert
   to authenticated
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists leads_update_member on public.leads;
 create policy leads_update_member
   on public.leads for update
   to authenticated
   using (public.is_workspace_member(workspace_id))
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists leads_delete_member on public.leads;
 create policy leads_delete_member
   on public.leads for delete
   to authenticated
@@ -132,22 +151,26 @@ grant select, insert, update, delete on public.leads to authenticated;
 
 alter table public.deals enable row level security;
 
+drop policy if exists deals_select_member on public.deals;
 create policy deals_select_member
   on public.deals for select
   to authenticated
   using (public.is_workspace_member(workspace_id));
 
+drop policy if exists deals_insert_member on public.deals;
 create policy deals_insert_member
   on public.deals for insert
   to authenticated
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists deals_update_member on public.deals;
 create policy deals_update_member
   on public.deals for update
   to authenticated
   using (public.is_workspace_member(workspace_id))
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists deals_delete_member on public.deals;
 create policy deals_delete_member
   on public.deals for delete
   to authenticated
@@ -159,22 +182,26 @@ grant select, insert, update, delete on public.deals to authenticated;
 
 alter table public.activities enable row level security;
 
+drop policy if exists activities_select_member on public.activities;
 create policy activities_select_member
   on public.activities for select
   to authenticated
   using (public.is_workspace_member(workspace_id));
 
+drop policy if exists activities_insert_member on public.activities;
 create policy activities_insert_member
   on public.activities for insert
   to authenticated
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists activities_update_member on public.activities;
 create policy activities_update_member
   on public.activities for update
   to authenticated
   using (public.is_workspace_member(workspace_id))
   with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists activities_delete_member on public.activities;
 create policy activities_delete_member
   on public.activities for delete
   to authenticated
@@ -189,6 +216,7 @@ grant select, insert, update, delete on public.activities to authenticated;
 
 alter table public.audit_logs enable row level security;
 
+drop policy if exists audit_logs_select_admin on public.audit_logs;
 create policy audit_logs_select_admin
   on public.audit_logs for select
   to authenticated
