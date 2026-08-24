@@ -203,10 +203,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Implementar upload de logo real e conectar as telas de settings (M7) ao backend.
 
 **Entregas:**
-- [ ] Upload de logo para bucket `workspace-assets` (compressão client-side, validação PNG/JPG/SVG/WebP até 2MB)
-- [ ] Logo refletido na Sidebar/Navbar e no cabeçalho dos e-mails transacionais (Resend)
-- [ ] Backend real de convite/remoção de membros
-- [ ] Enforce no backend do hard limit de colaboradores do plano Free
+- [x] Upload de logo para bucket `workspace-assets` (compressão client-side, validação PNG/JPG/SVG/WebP até 2MB)
+- [x] Logo refletido na Sidebar/Navbar e no cabeçalho dos e-mails transacionais (Resend)
+- [x] Backend real de convite/remoção de membros
+- [x] Enforce no backend do hard limit de colaboradores do plano Free
 
 **Commit final:** `feat: branding, upload de logo e gestão de membros conectados ao backend`
 
