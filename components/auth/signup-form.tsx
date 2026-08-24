@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signup } from "@/app/(auth)/actions";
 
 const signupSchema = z
   .object({
@@ -27,8 +28,11 @@ const signupSchema = z
 type SignupValues = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [checkEmail, setCheckEmail] = useState(false);
   const {
     register,
     handleSubmit,
@@ -37,14 +41,32 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupValues) {
     setSubmitError(null);
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const result = await signup({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+      next: token ? `/join?token=${token}` : undefined,
+    });
 
-    // Mock: sem backend ainda (Supabase Auth chega no M9). E-mail abaixo demonstra o estado de erro.
-    if (values.email === "existe@leadflow.com") {
-      setSubmitError("Já existe uma conta com este e-mail.");
+    if (result?.status === "error") {
+      setSubmitError(result.message);
       return;
     }
-    router.push("/onboarding");
+    if (result?.status === "check-email") {
+      setCheckEmail(true);
+    }
+  }
+
+  if (checkEmail) {
+    return (
+      <Alert variant="success">
+        <CheckCircle2 className="h-4 w-4" />
+        <AlertTitle>Confira seu e-mail</AlertTitle>
+        <AlertDescription>
+          Enviamos um link de confirmação. Clique nele para ativar sua conta e continuar.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (

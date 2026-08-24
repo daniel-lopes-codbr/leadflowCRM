@@ -1,8 +1,17 @@
 import { Workflow } from "lucide-react";
 import { MobileNav } from "@/components/shell/mobile-nav";
 import { UserMenu } from "@/components/shell/user-menu";
+import { createClient } from "@/lib/supabase/server";
 
-export function Navbar({ workspaceId }: { workspaceId: string }) {
+export async function Navbar({ workspaceId }: { workspaceId: string }) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const email = user?.email ?? "";
+  const name = (user?.user_metadata?.name as string | undefined) || email.split("@")[0] || "Você";
+
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 lg:px-6">
       <div className="flex items-center gap-3 lg:hidden">
@@ -14,7 +23,7 @@ export function Navbar({ workspaceId }: { workspaceId: string }) {
 
       <div className="flex-1" />
 
-      <UserMenu workspaceId={workspaceId} />
+      <UserMenu workspaceId={workspaceId} name={name} email={email} />
     </header>
   );
 }
