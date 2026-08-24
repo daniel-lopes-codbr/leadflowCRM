@@ -190,9 +190,9 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Substituir os dados mockados do Dashboard (M6) por queries reais.
 
 **Entregas:**
-- [ ] Queries de métricas (Total Leads, Negócios Abertos, Valor Pipeline, Taxa de Conversão)
-- [ ] Dados reais do gráfico de funil (Recharts)
-- [ ] Query de negócios com prazo próximo por usuário logado
+- [x] Queries de métricas (Total Leads, Negócios Abertos, Valor Pipeline, Taxa de Conversão)
+- [x] Dados reais do gráfico de funil (Recharts)
+- [x] Query de negócios com prazo próximo por usuário logado
 
 **Commit final:** `feat: dashboard conectado a dados reais`
 
