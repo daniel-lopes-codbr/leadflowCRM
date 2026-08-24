@@ -1,27 +1,62 @@
 import { BadgePercent, Contact, TrendingUp, Wallet } from "lucide-react";
-import { mockDeals } from "@/components/kanban/data";
-import { mockLeads } from "@/components/leads/data";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesFunnelChart } from "@/components/dashboard/sales-funnel-chart";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
+import { toOneRelation } from "@/lib/supabase/relations";
+import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { LEAD_STATUSES, type LeadStatus } from "@/types/lead";
+import type { Deal } from "@/types/deal";
 
 const DEADLINE_WINDOW_DAYS = 7;
 
-export default function DashboardPage({ params }: { params: { workspaceId: string } }) {
-  const totalLeads = mockLeads.length;
+export default async function DashboardPage({ params }: { params: { workspaceId: string } }) {
+  const supabase = createClient();
 
-  const openDeals = mockDeals.filter(
+  const [
+    {
+      data: { user },
+    },
+    { count: totalLeads },
+    { data: dealRows },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", params.workspaceId),
+    supabase
+      .from("deals")
+      .select("id, title, value, status, deadline, lead_id, owner_id, leads(name), profiles(name)")
+      .eq("workspace_id", params.workspaceId),
+  ]);
+
+  const deals: Deal[] = (dealRows ?? []).map((row) => {
+    const lead = toOneRelation(row.leads as { name: string } | { name: string }[] | null);
+    const owner = toOneRelation(row.profiles as { name: string } | { name: string }[] | null);
+    return {
+      id: row.id,
+      title: row.title,
+      value: Number(row.value),
+      leadId: row.lead_id ?? "",
+      leadName: lead?.name ?? "Sem lead vinculado",
+      ownerId: row.owner_id ?? "",
+      ownerName: owner?.name ?? "Sem responsável",
+      deadline: row.deadline ?? "",
+      status: row.status as LeadStatus,
+    };
+  });
+
+  const openDeals = deals.filter(
     (deal) => deal.status !== "Fechado Ganho" && deal.status !== "Fechado Perdido"
   );
   const pipelineValue = openDeals.reduce((sum, deal) => sum + deal.value, 0);
 
-  const wonDeals = mockDeals.filter((deal) => deal.status === "Fechado Ganho").length;
-  const conversionRate = mockDeals.length > 0 ? (wonDeals / mockDeals.length) * 100 : 0;
+  const wonDeals = deals.filter((deal) => deal.status === "Fechado Ganho").length;
+  const conversionRate = deals.length > 0 ? (wonDeals / deals.length) * 100 : 0;
 
   const dealsByStatus = Object.fromEntries(
-    LEAD_STATUSES.map((status) => [status, mockDeals.filter((d) => d.status === status).length])
+    LEAD_STATUSES.map((status) => [status, deals.filter((d) => d.status === status).length])
   ) as Record<LeadStatus, number>;
 
   const today = new Date();
@@ -30,7 +65,7 @@ export default function DashboardPage({ params }: { params: { workspaceId: strin
   windowEnd.setDate(windowEnd.getDate() + DEADLINE_WINDOW_DAYS);
 
   const upcomingDeals = openDeals
-    .filter((deal) => new Date(deal.deadline) <= windowEnd)
+    .filter((deal) => deal.ownerId === user?.id && new Date(deal.deadline) <= windowEnd)
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
 
   return (
@@ -43,7 +78,7 @@ export default function DashboardPage({ params }: { params: { workspaceId: strin
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={Contact} label="Total de leads" value={String(totalLeads)} />
+        <MetricCard icon={Contact} label="Total de leads" value={String(totalLeads ?? 0)} />
         <MetricCard icon={TrendingUp} label="Negócios abertos" value={String(openDeals.length)} />
         <MetricCard
           icon={Wallet}
@@ -54,7 +89,7 @@ export default function DashboardPage({ params }: { params: { workspaceId: strin
           icon={BadgePercent}
           label="Taxa de conversão"
           value={`${conversionRate.toFixed(0)}%`}
-          hint={`${wonDeals} de ${mockDeals.length} negócios ganhos`}
+          hint={`${wonDeals} de ${deals.length} negócios ganhos`}
         />
       </div>
 
