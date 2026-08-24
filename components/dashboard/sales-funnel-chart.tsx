@@ -32,8 +32,8 @@ export function SalesFunnelChart({ dealsByStatus }: { dealsByStatus: Record<Lead
       <CardHeader>
         <CardTitle className="text-base">Funil de vendas</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
+      <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
+        <ResponsiveContainer width="100%" height={280} className="sm:flex-1">
           <FunnelChart>
             <Tooltip
               contentStyle={{
@@ -43,13 +43,6 @@ export function SalesFunnelChart({ dealsByStatus }: { dealsByStatus: Record<Lead
               }}
             />
             <Funnel dataKey="value" data={data} isAnimationActive>
-              <LabelList
-                dataKey="name"
-                position="right"
-                fill="var(--foreground)"
-                stroke="none"
-                fontSize={12}
-              />
               <LabelList
                 dataKey="value"
                 position="center"
@@ -61,6 +54,19 @@ export function SalesFunnelChart({ dealsByStatus }: { dealsByStatus: Record<Lead
             </Funnel>
           </FunnelChart>
         </ResponsiveContainer>
+
+        <ul className="w-full shrink-0 space-y-2.5 sm:w-44">
+          {data.map((stage) => (
+            <li key={stage.name} className="flex items-center gap-2 text-sm">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: stage.fill }}
+              />
+              <span className="min-w-0 flex-1 truncate text-foreground">{stage.name}</span>
+              <span className="shrink-0 font-medium text-muted-foreground">{stage.value}</span>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );

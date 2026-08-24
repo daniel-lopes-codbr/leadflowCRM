@@ -9,7 +9,7 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
+    <div className="flex h-full min-w-0 flex-col gap-6 p-4">
       <WorkspaceSwitcher workspaceId={workspaceId} />
       <NavLinks workspaceId={workspaceId} onNavigate={onNavigate} />
     </div>

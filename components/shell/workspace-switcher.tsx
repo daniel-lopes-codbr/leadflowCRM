@@ -29,7 +29,7 @@ export function WorkspaceSwitcher({ workspaceId }: { workspaceId: string }) {
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Workflow className="h-4 w-4" strokeWidth={2.25} />
           </span>
-          <span className="flex-1 truncate font-medium text-foreground">{current.name}</span>
+          <span className="min-w-0 flex-1 truncate font-medium text-foreground">{current.name}</span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
