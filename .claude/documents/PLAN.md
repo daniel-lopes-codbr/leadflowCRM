@@ -177,9 +177,9 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Persistir os Deals e o drag-and-drop do Kanban (M5) no Supabase.
 
 **Entregas:**
-- [ ] Server Actions: criar/editar Deal
-- [ ] Persistência imediata de mudança de status (coluna) via drag-and-drop
-- [ ] Cálculo real de valor total do pipeline por workspace
+- [x] Server Actions: criar/editar Deal
+- [x] Persistência imediata de mudança de status (coluna) via drag-and-drop
+- [x] Cálculo real de valor total do pipeline por workspace
 
 **Commit final:** `feat: backend do pipeline Kanban conectado ao Supabase`
 

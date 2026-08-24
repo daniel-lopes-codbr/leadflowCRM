@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -10,48 +11,76 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { mockOwners } from "@/components/leads/data";
-import { mockDeals } from "@/components/kanban/data";
+import { createDeal, updateDeal, updateDealStatus } from "@/app/(app)/[workspaceId]/pipeline/actions";
 import { DealCardBody } from "@/components/kanban/deal-card";
 import { DealFormDialog, type DealFormValues } from "@/components/kanban/deal-form-dialog";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { LEAD_STATUSES, type LeadStatus } from "@/types/lead";
 import type { Deal } from "@/types/deal";
-import { mockLeads } from "@/components/leads/data";
 
-export function KanbanBoard() {
-  const [deals, setDeals] = useState<Deal[]>(mockDeals);
+type LeadOption = { id: string; name: string; company: string };
+type Member = { id: string; name: string };
+
+export function KanbanBoard({
+  workspaceId,
+  deals: initialDeals,
+  leads,
+  members,
+}: {
+  workspaceId: string;
+  deals: Deal[];
+  leads: LeadOption[];
+  members: Member[];
+}) {
+  const router = useRouter();
+  const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<LeadStatus | undefined>(undefined);
+  const [dragError, setDragError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDeals(initialDeals);
+  }, [initialDeals]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const dealsByStatus = useMemo(() => {
-    const grouped = Object.fromEntries(
-      LEAD_STATUSES.map((status) => [status, [] as Deal[]])
-    ) as Record<LeadStatus, Deal[]>;
-    for (const deal of deals) grouped[deal.status].push(deal);
-    return grouped;
-  }, [deals]);
+  const dealsByStatus = LEAD_STATUSES.reduce(
+    (grouped, status) => {
+      grouped[status] = deals.filter((deal) => deal.status === status);
+      return grouped;
+    },
+    {} as Record<LeadStatus, Deal[]>
+  );
 
   function handleDragStart(event: DragStartEvent) {
     const deal = deals.find((d) => d.id === event.active.id);
     setActiveDeal(deal ?? null);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     setActiveDeal(null);
     const { active, over } = event;
     if (!over) return;
 
+    const dealId = String(active.id);
     const newStatus = over.id as LeadStatus;
-    setDeals((prev) =>
-      prev.map((deal) => (deal.id === active.id ? { ...deal, status: newStatus } : deal))
-    );
+    const deal = deals.find((d) => d.id === dealId);
+    if (!deal || deal.status === newStatus) return;
+
+    const previousStatus = deal.status;
+    setDragError(null);
+    setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status: newStatus } : d)));
+
+    const result = await updateDealStatus(workspaceId, dealId, newStatus);
+    if (result.status === "error") {
+      setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status: previousStatus } : d)));
+      setDragError(result.message);
+    }
   }
 
   function openCreateDialog(status?: LeadStatus) {
@@ -66,34 +95,26 @@ export function KanbanBoard() {
     setDialogOpen(true);
   }
 
-  function handleSubmit(values: DealFormValues) {
-    const lead = mockLeads.find((l) => l.id === values.leadId)!;
-    const owner = mockOwners.find((o) => o.id === values.ownerId)!;
+  async function handleSubmit(values: DealFormValues) {
+    const result = editingDeal
+      ? await updateDeal(workspaceId, editingDeal.id, values)
+      : await createDeal(workspaceId, values);
 
-    if (editingDeal) {
-      setDeals((prev) =>
-        prev.map((deal) =>
-          deal.id === editingDeal.id
-            ? { ...deal, ...values, leadName: lead.name, ownerName: owner.name }
-            : deal
-        )
-      );
-      return;
+    if (result.status === "success") {
+      router.refresh();
     }
-
-    setDeals((prev) => [
-      {
-        id: `d${Date.now()}`,
-        ...values,
-        leadName: lead.name,
-        ownerName: owner.name,
-      },
-      ...prev,
-    ]);
+    return result;
   }
 
   return (
     <div className="space-y-4">
+      {dragError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{dragError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-end">
         <Button onClick={() => openCreateDialog()}>
           <Plus className="h-4 w-4" />
@@ -122,6 +143,8 @@ export function KanbanBoard() {
         onOpenChange={setDialogOpen}
         deal={editingDeal}
         defaultStatus={defaultStatus}
+        leads={leads}
+        members={members}
         onSubmit={handleSubmit}
       />
     </div>
