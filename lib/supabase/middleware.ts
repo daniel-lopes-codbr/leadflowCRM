@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const AUTH_ONLY_PATHS = ["/login", "/signup"];
+// Páginas que só fazem sentido pra quem ainda não está logado — landing,
+// login, cadastro. Quem já tem sessão é mandado pro próprio workspace.
+const LOGGED_OUT_ONLY_PATHS = ["/", "/login", "/signup"];
 const PROTECTED_PATHS = ["/onboarding", "/join"];
 const PUBLIC_TOP_SEGMENTS = new Set([
   "login",
@@ -23,6 +25,13 @@ function isProtected(pathname: string) {
     PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     isWorkspaceRoute(pathname)
   );
+}
+
+// `next` chega como query param de fora (link, bookmark, redirect encadeado).
+// Só aceitamos caminho relativo de origem única — bloqueia
+// `//evil.com`, `https://evil.com` e `/\evil.com` (open redirect).
+function isSafeNextPath(path: string | null): path is string {
+  return !!path && path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\");
 }
 
 export async function updateSession(request: NextRequest) {
@@ -59,9 +68,24 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && AUTH_ONLY_PATHS.includes(pathname)) {
-    const next = request.nextUrl.searchParams.get("next") ?? "/onboarding";
-    return NextResponse.redirect(new URL(next, request.url));
+  if (user && LOGGED_OUT_ONLY_PATHS.includes(pathname)) {
+    const rawNext = request.nextUrl.searchParams.get("next");
+    if (isSafeNextPath(rawNext)) {
+      return NextResponse.redirect(new URL(rawNext, request.url));
+    }
+
+    // Sem `next` explícito: manda quem já está logado pro workspace que já
+    // tem, em vez de sempre jogar pra tela de criar um novo (só cai em
+    // /onboarding quem realmente ainda não tem nenhum).
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("workspace_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    const fallback = membership ? `/${membership.workspace_id}/dashboard` : "/onboarding";
+    return NextResponse.redirect(new URL(fallback, request.url));
   }
 
   return response;
