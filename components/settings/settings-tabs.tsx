@@ -48,7 +48,7 @@ export function SettingsTabs({
         />
       </TabsContent>
 
-      <TabsContent value="plans" className="mt-6">
+      <TabsContent value="plans" className="mt-6 max-w-3xl">
         <PlansPanel plan={workspace.plan} membersUsed={members.length} leadsUsed={leadsUsed} />
       </TabsContent>
 
