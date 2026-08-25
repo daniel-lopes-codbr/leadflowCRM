@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Settings, User } from "lucide-react";
+import { useTheme } from "next-themes";
+import { LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,10 +32,16 @@ export function UserMenu({
   name: string;
   email: string;
 }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <button
+          aria-label="Menu do usuário"
+          className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
               {initials(name)}
@@ -59,6 +66,10 @@ export function UserMenu({
             <Settings className="h-4 w-4" />
             Configurações
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setTheme(isDark ? "light" : "dark")}>
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? "Modo claro" : "Modo escuro"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => logout()}>
