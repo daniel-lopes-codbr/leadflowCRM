@@ -4,7 +4,12 @@ import { NextResponse, type NextRequest } from "next/server";
 // Páginas que só fazem sentido pra quem ainda não está logado — landing,
 // login, cadastro. Quem já tem sessão é mandado pro próprio workspace.
 const LOGGED_OUT_ONLY_PATHS = ["/", "/login", "/signup"];
-const PROTECTED_PATHS = ["/onboarding", "/join"];
+// /join fica de fora: a própria página já trata usuário autenticado e
+// não-autenticado (mostra link de cadastro com o token pra quem ainda não
+// tem conta) e a Server Action de aceite revalida sessão/e-mail por conta
+// própria — bloquear a rota aqui só quebrava esse fluxo pra quem ainda não
+// tinha login (media redirecionado pro /login sem o contexto do convite).
+const PROTECTED_PATHS = ["/onboarding"];
 const PUBLIC_TOP_SEGMENTS = new Set([
   "login",
   "signup",
@@ -13,6 +18,10 @@ const PUBLIC_TOP_SEGMENTS = new Set([
   "auth",
   "termos",
   "privacidade",
+  // Rotas de API/webhook implementam sua própria autenticação (ex.:
+  // verificação de assinatura do Stripe) — não fazem sentido atrás do
+  // redirect de sessão do middleware de página.
+  "api",
 ]);
 
 function isWorkspaceRoute(pathname: string) {
