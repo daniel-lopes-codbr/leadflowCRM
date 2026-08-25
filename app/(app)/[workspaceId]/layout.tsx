@@ -4,13 +4,18 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function AppLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { workspaceId: string };
-}) {
+export default async function AppLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ workspaceId: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const supabase = createClient();
 
   const {

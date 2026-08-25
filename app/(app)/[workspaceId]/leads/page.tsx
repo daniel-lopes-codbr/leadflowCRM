@@ -3,13 +3,14 @@ import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 import type { Lead, LeadStatus } from "@/types/lead";
 
-export default async function LeadsPage({
-  params,
-  searchParams,
-}: {
-  params: { workspaceId: string };
-  searchParams: { search?: string; status?: string; ownerId?: string; from?: string; to?: string };
-}) {
+export default async function LeadsPage(
+  props: {
+    params: Promise<{ workspaceId: string }>;
+    searchParams: Promise<{ search?: string; status?: string; ownerId?: string; from?: string; to?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const supabase = createClient();
 
   const { data: memberRows } = await supabase
