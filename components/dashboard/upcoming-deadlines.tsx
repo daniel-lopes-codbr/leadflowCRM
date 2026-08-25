@@ -42,7 +42,7 @@ export function UpcomingDeadlines({ deals, workspaceId }: { deals: Deal[]; works
                     <span
                       className={`flex items-center gap-1 text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}
                     >
-                      <CalendarClock className="h-3 w-3" />
+                      <CalendarClock className="h-3.5 w-3.5" />
                       {new Date(deal.deadline).toLocaleDateString("pt-BR")}
                     </span>
                   </div>

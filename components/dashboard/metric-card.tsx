@@ -21,7 +21,7 @@ export function MetricCard({
           {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
         </div>
         <span className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-primary">
-          <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+          <Icon className="h-5 w-5" strokeWidth={2} />
         </span>
       </CardContent>
     </Card>

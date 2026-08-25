@@ -36,27 +36,33 @@ export function SalesFunnelChart({ dealsByStatus }: { dealsByStatus: Record<Lead
         <CardTitle className="text-base">Funil de vendas</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
-        <ResponsiveContainer width="100%" height={280} className="sm:flex-1">
-          <FunnelChart>
-            <Tooltip
-              contentStyle={{
-                borderRadius: 8,
-                borderColor: "var(--border)",
-                fontSize: 12,
-              }}
-            />
-            <Funnel dataKey="value" data={data} isAnimationActive>
-              <LabelList
-                dataKey="value"
-                position="center"
-                fill="var(--primary-foreground)"
-                stroke="none"
-                fontSize={13}
-                fontWeight={600}
+        <div
+          role="img"
+          aria-label={`Funil de vendas: ${data.map((stage) => `${stage.name} ${stage.value}`).join(", ")}`}
+          className="w-full sm:flex-1"
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <FunnelChart accessibilityLayer>
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 8,
+                  borderColor: "var(--border)",
+                  fontSize: 12,
+                }}
               />
-            </Funnel>
-          </FunnelChart>
-        </ResponsiveContainer>
+              <Funnel dataKey="value" data={data} isAnimationActive>
+                <LabelList
+                  dataKey="value"
+                  position="center"
+                  fill="var(--primary-foreground)"
+                  stroke="none"
+                  fontSize={13}
+                  fontWeight={600}
+                />
+              </Funnel>
+            </FunnelChart>
+          </ResponsiveContainer>
+        </div>
 
         <ul className="w-full shrink-0 space-y-2.5 sm:w-44">
           {data.map((stage) => (
