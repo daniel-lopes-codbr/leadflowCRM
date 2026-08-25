@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPrivacyPanel } from "@/components/settings/data-privacy-panel";
 import { MembersPanel, type Member, type PendingInvite } from "@/components/settings/members-panel";
@@ -24,8 +25,13 @@ export function SettingsTabs({
   isAdmin: boolean;
   leadsUsed: number;
 }) {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const validTabs = ["workspace", "members", "plans", "data"];
+  const defaultTab = validTabs.includes(tabParam ?? "") ? (tabParam as string) : "workspace";
+
   return (
-    <Tabs defaultValue="workspace">
+    <Tabs defaultValue={defaultTab}>
       <TabsList>
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
         <TabsTrigger value="members">Membros</TabsTrigger>
@@ -49,7 +55,12 @@ export function SettingsTabs({
       </TabsContent>
 
       <TabsContent value="plans" className="mt-6 max-w-3xl">
-        <PlansPanel plan={workspace.plan} membersUsed={members.length} leadsUsed={leadsUsed} />
+        <PlansPanel
+          workspaceId={workspaceId}
+          plan={workspace.plan}
+          membersUsed={members.length}
+          leadsUsed={leadsUsed}
+        />
       </TabsContent>
 
       <TabsContent value="data" className="mt-6 max-w-lg">
