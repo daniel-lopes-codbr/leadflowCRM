@@ -231,10 +231,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Implementar os fluxos reais de conformidade LGPD e a tabela de auditoria de negócio.
 
 **Entregas:**
-- [ ] Fluxo de exclusão total de dados de lead/workspace (conectando a tela do M7)
-- [ ] Exportação de dados em CSV/JSON
-- [ ] Opt-out automático nos rodapés de e-mails (Resend)
-- [ ] Registro em `audit_logs`: criação/exclusão de workspace, upgrade/downgrade de plano, convites aceitos/removidos, exportação de dados
+- [x] Fluxo de exclusão total de dados de lead/workspace (conectando a tela do M7)
+- [x] Exportação de dados em CSV/JSON
+- [x] Opt-out automático nos rodapés de e-mails (Resend)
+- [x] Registro em `audit_logs`: criação/exclusão de workspace, upgrade/downgrade de plano, convites aceitos/removidos, exportação de dados
 
 **Commit final:** `feat: conformidade LGPD e logs de auditoria`
 

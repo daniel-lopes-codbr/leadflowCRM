@@ -73,5 +73,12 @@ export async function acceptInvite(token: string) {
 
   await admin.from("invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
 
+  await admin.from("audit_logs").insert({
+    workspace_id: invite.workspace_id,
+    actor_id: user.id,
+    event_type: "member.joined",
+    metadata: { email: invite.email, role: invite.role },
+  });
+
   redirect(`/${invite.workspace_id}/dashboard`);
 }

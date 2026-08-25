@@ -64,7 +64,7 @@ export function SettingsTabs({
       </TabsContent>
 
       <TabsContent value="data" className="mt-6 max-w-lg">
-        <DataPrivacyPanel />
+        <DataPrivacyPanel workspaceId={workspaceId} workspaceName={workspace.name} isAdmin={isAdmin} />
       </TabsContent>
     </Tabs>
   );

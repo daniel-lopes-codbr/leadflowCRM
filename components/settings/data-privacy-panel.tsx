@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Download, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,20 +17,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockWorkspace } from "@/components/settings/data";
+import { deleteWorkspace } from "@/app/(app)/[workspaceId]/settings/actions";
 
-export function DataPrivacyPanel() {
-  const [exportFormat, setExportFormat] = useState<"csv" | "json" | null>(null);
-  const [exportDone, setExportDone] = useState(false);
+export function DataPrivacyPanel({
+  workspaceId,
+  workspaceName,
+  isAdmin,
+}: {
+  workspaceId: string;
+  workspaceName: string;
+  isAdmin: boolean;
+}) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  async function handleExport(format: "csv" | "json") {
-    setExportFormat(format);
-    setExportDone(false);
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    setExportFormat(null);
-    setExportDone(true);
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await deleteWorkspace(workspaceId, confirmText);
+    setDeleting(false);
+    if (result?.status === "error") setDeleteError(result.message);
   }
 
   return (
@@ -39,42 +47,41 @@ export function DataPrivacyPanel() {
         <CardHeader>
           <CardTitle className="text-base">Exportar dados</CardTitle>
           <CardDescription>
-            Baixe todos os leads, negócios e atividades deste workspace, em conformidade com a LGPD.
+            Baixe os leads, negócios e atividades deste workspace, em conformidade com a LGPD.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {exportDone && (
-            <Alert variant="success">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                Exportação gerada (mock). O download real chega no M15.
-              </AlertDescription>
-            </Alert>
+          {!isAdmin && (
+            <p className="text-xs text-muted-foreground">
+              Só administradores podem exportar dados do workspace.
+            </p>
           )}
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleExport("csv")}
-              disabled={exportFormat !== null}
-            >
-              {exportFormat === "csv" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+            <Button variant="outline" disabled={!isAdmin} asChild={isAdmin}>
+              {isAdmin ? (
+                <a href={`/api/workspaces/${workspaceId}/export?format=csv`}>
+                  <Download className="h-4 w-4" />
+                  Exportar leads (CSV)
+                </a>
               ) : (
-                <Download className="h-4 w-4" />
+                <>
+                  <Download className="h-4 w-4" />
+                  Exportar leads (CSV)
+                </>
               )}
-              Exportar CSV
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleExport("json")}
-              disabled={exportFormat !== null}
-            >
-              {exportFormat === "json" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+            <Button variant="outline" disabled={!isAdmin} asChild={isAdmin}>
+              {isAdmin ? (
+                <a href={`/api/workspaces/${workspaceId}/export?format=json`}>
+                  <Download className="h-4 w-4" />
+                  Exportar tudo (JSON)
+                </a>
               ) : (
-                <Download className="h-4 w-4" />
+                <>
+                  <Download className="h-4 w-4" />
+                  Exportar tudo (JSON)
+                </>
               )}
-              Exportar JSON
             </Button>
           </div>
         </CardContent>
@@ -89,30 +96,47 @@ export function DataPrivacyPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="destructive"
+            disabled={!isAdmin}
+            onClick={() => setDeleteOpen(true)}
+          >
             <Trash2 className="h-4 w-4" />
             Excluir workspace
           </Button>
+          {!isAdmin && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Só administradores podem excluir o workspace.
+            </p>
+          )}
         </CardContent>
       </Card>
 
       <AlertDialog
         open={deleteOpen}
         onOpenChange={(open) => {
+          if (deleting) return;
           setDeleteOpen(open);
-          if (!open) setConfirmText("");
+          if (!open) {
+            setConfirmText("");
+            setDeleteError(null);
+          }
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Excluir &quot;{mockWorkspace.name}&quot; permanentemente?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Excluir &quot;{workspaceName}&quot; permanentemente?</AlertDialogTitle>
             <AlertDialogDescription>
               Todos os dados deste workspace serão apagados. Digite o nome do workspace para
               confirmar.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{deleteError}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="confirm-delete" className="sr-only">
               Confirme o nome do workspace
@@ -121,16 +145,21 @@ export function DataPrivacyPanel() {
               id="confirm-delete"
               value={confirmText}
               onChange={(event) => setConfirmText(event.target.value)}
-              placeholder={mockWorkspace.name}
+              placeholder={workspaceName}
+              disabled={deleting}
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={confirmText !== mockWorkspace.name}
-              onClick={() => setDeleteOpen(false)}
+              disabled={confirmText !== workspaceName || deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                handleDelete();
+              }}
               className="text-destructive-foreground hover:bg-destructive/90 bg-destructive"
             >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
