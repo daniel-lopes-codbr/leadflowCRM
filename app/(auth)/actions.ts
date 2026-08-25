@@ -3,14 +3,25 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createRatelimiter, getClientIp } from "@/lib/upstash/ratelimit";
 
 export type AuthActionResult =
   { status: "error"; message: string } | { status: "check-email"; message: string };
+
+// Camada extra por IP além do rate limit próprio do Supabase Auth — cobre o
+// caso de um único IP variando o e-mail alvo em tentativas automatizadas.
+const loginRatelimit = createRatelimiter("login", 10, "60 s");
+const signupRatelimit = createRatelimiter("signup", 5, "60 s");
 
 export async function login(input: {
   email: string;
   password: string;
 }): Promise<AuthActionResult | void> {
+  const { success } = await loginRatelimit.limit(getClientIp(await headers()));
+  if (!success) {
+    return { status: "error", message: "Muitas tentativas. Tente novamente em instantes." };
+  }
+
   const supabase = createClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -38,8 +49,14 @@ export async function signup(input: {
   password: string;
   next?: string;
 }): Promise<AuthActionResult | void> {
+  const requestHeaders = await headers();
+  const { success } = await signupRatelimit.limit(getClientIp(requestHeaders));
+  if (!success) {
+    return { status: "error", message: "Muitas tentativas. Tente novamente em instantes." };
+  }
+
   const supabase = createClient();
-  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
+  const origin = requestHeaders.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
   const next = input.next ?? "/onboarding";
 
   const { data, error } = await supabase.auth.signUp({
