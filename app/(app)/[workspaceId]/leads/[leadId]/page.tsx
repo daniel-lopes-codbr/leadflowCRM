@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import type { Activity, ActivityType } from "@/types/activity";
 import type { Lead, LeadStatus } from "@/types/lead";
 
-export default async function LeadDetailPage({
-  params,
-}: {
-  params: { workspaceId: string; leadId: string };
-}) {
+export default async function LeadDetailPage(
+  props: {
+    params: Promise<{ workspaceId: string; leadId: string }>;
+  }
+) {
+  const params = await props.params;
   const supabase = createClient();
 
   const { data: leadRow } = await supabase

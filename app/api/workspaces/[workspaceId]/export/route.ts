@@ -18,7 +18,8 @@ function toCsv(rows: Record<string, unknown>[]): string {
   return lines.join("\n");
 }
 
-export async function GET(request: Request, { params }: { params: { workspaceId: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ workspaceId: string }> }) {
+  const params = await props.params;
   const url = new URL(request.url);
   const format = url.searchParams.get("format") === "json" ? "json" : "csv";
 

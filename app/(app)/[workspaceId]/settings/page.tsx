@@ -3,7 +3,8 @@ import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 import type { WorkspacePlan } from "@/lib/plans";
 
-export default async function SettingsPage({ params }: { params: { workspaceId: string } }) {
+export default async function SettingsPage(props: { params: Promise<{ workspaceId: string }> }) {
+  const params = await props.params;
   const supabase = createClient();
 
   const {

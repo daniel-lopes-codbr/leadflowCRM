@@ -39,7 +39,7 @@ export async function signup(input: {
   next?: string;
 }): Promise<AuthActionResult | void> {
   const supabase = createClient();
-  const origin = headers().get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
+  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
   const next = input.next ?? "/onboarding";
 
   const { data, error } = await supabase.auth.signUp({

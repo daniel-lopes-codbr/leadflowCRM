@@ -12,11 +12,12 @@ export const metadata: Metadata = {
   title: "Aceitar convite · LeadFlow CRM",
 };
 
-export default async function JoinPage({
-  searchParams,
-}: {
-  searchParams: { token?: string; error?: string };
-}) {
+export default async function JoinPage(
+  props: {
+    searchParams: Promise<{ token?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const token = searchParams.token;
 
   if (!token) {

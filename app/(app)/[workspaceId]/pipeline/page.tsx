@@ -5,11 +5,12 @@ import { formatCurrency } from "@/lib/utils";
 import type { Deal } from "@/types/deal";
 import type { LeadStatus } from "@/types/lead";
 
-export default async function PipelinePage({
-  params,
-}: {
-  params: { workspaceId: string };
-}) {
+export default async function PipelinePage(
+  props: {
+    params: Promise<{ workspaceId: string }>;
+  }
+) {
+  const params = await props.params;
   const supabase = createClient();
 
   const [{ data: dealRows }, { data: leadRows }, { data: memberRows }] = await Promise.all([

@@ -10,7 +10,8 @@ import type { Deal } from "@/types/deal";
 
 const DEADLINE_WINDOW_DAYS = 7;
 
-export default async function DashboardPage({ params }: { params: { workspaceId: string } }) {
+export default async function DashboardPage(props: { params: Promise<{ workspaceId: string }> }) {
+  const params = await props.params;
   const supabase = createClient();
 
   const [
