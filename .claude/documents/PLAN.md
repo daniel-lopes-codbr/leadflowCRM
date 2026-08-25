@@ -247,10 +247,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Revisar segurança e cobrir os fluxos críticos com testes antes do deploy.
 
 **Entregas:**
-- [ ] Revisão de isolamento de tenant via RLS (testes manuais/automatizados)
-- [ ] Testes E2E dos fluxos críticos (onboarding, Kanban, billing)
-- [ ] Revisão de acessibilidade básica
-- [ ] Tratamento de erros e estados vazios/loading em todas as telas
+- [x] Revisão de isolamento de tenant via RLS (testes manuais/automatizados)
+- [x] Testes E2E dos fluxos críticos (onboarding, Kanban, billing)
+- [x] Revisão de acessibilidade básica
+- [x] Tratamento de erros e estados vazios/loading em todas as telas
 
 **Commit final:** `test: hardening de segurança e testes end-to-end`
 
