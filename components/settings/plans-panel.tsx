@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { AlertTriangle, Check, CheckCircle2, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { createCheckoutSession, createPortalSession } from "@/app/(app)/[workspaceId]/settings/billing-actions";
 import { PLAN_LIMITS, type WorkspacePlan } from "@/lib/plans";
 
 const plans = [
@@ -30,26 +33,64 @@ const plans = [
 ];
 
 export function PlansPanel({
+  workspaceId,
   plan,
   membersUsed,
   leadsUsed,
 }: {
+  workspaceId: string;
   plan: WorkspacePlan;
   membersUsed: number;
   leadsUsed: number;
 }) {
+  const searchParams = useSearchParams();
+  const checkoutStatus = searchParams.get("checkout");
   const [upgrading, setUpgrading] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const currentPlan = plan;
   const limits = PLAN_LIMITS[currentPlan];
 
   async function handleUpgrade() {
+    setActionError(null);
     setUpgrading(true);
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const result = await createCheckoutSession(workspaceId);
     setUpgrading(false);
+    if (result?.status === "error") setActionError(result.message);
+  }
+
+  async function handleManageSubscription() {
+    setActionError(null);
+    setManaging(true);
+    const result = await createPortalSession(workspaceId);
+    setManaging(false);
+    if (result?.status === "error") setActionError(result.message);
   }
 
   return (
     <div className="space-y-6">
+      {checkoutStatus === "success" && (
+        <Alert variant="success">
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertDescription>
+            Pagamento confirmado! Seu plano é atualizado assim que o Stripe conclui o processamento
+            — recarregue em alguns segundos se ainda estiver aparecendo Free.
+          </AlertDescription>
+        </Alert>
+      )}
+      {checkoutStatus === "cancelled" && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>Checkout cancelado. Nenhuma cobrança foi feita.</AlertDescription>
+        </Alert>
+      )}
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      )}
+
       {currentPlan === "free" && (
         <Card>
           <CardHeader>
@@ -83,33 +124,44 @@ export function PlansPanel({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {plans.map((plan) => {
-          const isCurrent = plan.id === currentPlan;
+        {plans.map((planOption) => {
+          const isCurrent = planOption.id === currentPlan;
           return (
-            <Card key={plan.id} className={isCurrent ? "border-primary" : undefined}>
+            <Card key={planOption.id} className={isCurrent ? "border-primary" : undefined}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{plan.name}</CardTitle>
+                  <CardTitle className="text-base">{planOption.name}</CardTitle>
                   {isCurrent && <Badge>Plano atual</Badge>}
                 </div>
-                <p className="pt-1 text-2xl font-semibold text-foreground">{plan.price}</p>
+                <p className="pt-1 text-2xl font-semibold text-foreground">{planOption.price}</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2">
-                  {plan.features.map((feature) => (
+                  {planOption.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
                       <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                {plan.id === "pro" && currentPlan === "free" && (
+                {planOption.id === "pro" && currentPlan === "free" && (
                   <Button className="w-full" onClick={handleUpgrade} disabled={upgrading}>
                     {upgrading && <Loader2 className="h-4 w-4 animate-spin" />}
                     Assinar Pro
                   </Button>
                 )}
-                {isCurrent && (
+                {planOption.id === "pro" && currentPlan === "pro" && (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={handleManageSubscription}
+                    disabled={managing}
+                  >
+                    {managing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Gerenciar assinatura
+                  </Button>
+                )}
+                {planOption.id === "free" && isCurrent && (
                   <Button className="w-full" variant="outline" disabled>
                     Plano atual
                   </Button>

@@ -217,10 +217,10 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Implementar o fluxo de monetização completo, conectando a tela de Planos (M7).
 
 **Entregas:**
-- [ ] Checkout Session para upgrade ao plano Pro
-- [ ] Webhook de confirmação de pagamento → upgrade do workspace
-- [ ] Customer Portal (cancelamento, troca de método de pagamento)
-- [ ] Downgrade automático e reflexo dos limites do plano na UI
+- [x] Checkout Session para upgrade ao plano Pro
+- [x] Webhook de confirmação de pagamento → upgrade do workspace
+- [x] Customer Portal (cancelamento, troca de método de pagamento)
+- [x] Downgrade automático e reflexo dos limites do plano na UI
 
 **Commit final:** `feat: integração completa de billing com Stripe`
 
