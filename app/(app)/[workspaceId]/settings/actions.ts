@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -91,6 +92,27 @@ export async function inviteMember(input: {
   const logoHeader = workspace.logo_url
     ? `<img src="${workspace.logo_url}" alt="${workspace.name}" height="32" style="display:block;margin-bottom:16px;border-radius:6px;" />`
     : "";
+  const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?token=${invite.token}`;
+  const footer = `<p style="margin-top:24px;font-size:12px;color:#94a3b8;">Não quer mais receber e-mails como este? <a href="${unsubscribeUrl}" style="color:#94a3b8;">Cancelar inscrição</a>.</p>`;
+
+  // email_opt_outs tem RLS sem nenhuma policy pra authenticated (só
+  // service_role acessa) — tem que ser o admin client, senão a query
+  // simplesmente não vê nada e o opt-out passa despercebido.
+  const admin = createAdminClient();
+  const { data: optedOut } = await admin
+    .from("email_opt_outs")
+    .select("email")
+    .eq("email", input.email.toLowerCase())
+    .maybeSingle();
+
+  if (optedOut) {
+    return {
+      status: "error",
+      message:
+        "Este e-mail optou por não receber mensagens do LeadFlow. Peça para a pessoa acessar: " +
+        inviteUrl,
+    };
+  }
 
   try {
     const resend = createResendClient();
@@ -98,7 +120,7 @@ export async function inviteMember(input: {
       from: FROM_EMAIL,
       to: input.email,
       subject: `Você foi convidado para o workspace ${workspace.name} no LeadFlow CRM`,
-      html: `${logoHeader}<p>Você foi convidado para colaborar no workspace <strong>${workspace.name}</strong> no LeadFlow CRM.</p><p><a href="${inviteUrl}">Aceitar convite e criar sua conta</a></p>`,
+      html: `${logoHeader}<p>Você foi convidado para colaborar no workspace <strong>${workspace.name}</strong> no LeadFlow CRM.</p><p><a href="${inviteUrl}">Aceitar convite e criar sua conta</a></p>${footer}`,
     });
   } catch {
     return {
@@ -109,7 +131,6 @@ export async function inviteMember(input: {
     };
   }
 
-  const admin = createAdminClient();
   await admin.from("audit_logs").insert({
     workspace_id: input.workspaceId,
     actor_id: user.id,
@@ -274,4 +295,55 @@ export async function updateWorkspace(formData: FormData): Promise<SettingsActio
 
   revalidatePath(`/${workspaceId}`, "layout");
   return { status: "success" };
+}
+
+export async function deleteWorkspace(
+  workspaceId: string,
+  confirmName: string
+): Promise<SettingsActionResult> {
+  const supabase = createClient();
+  const user = await requireUser(supabase);
+  if (!user) {
+    return { status: "error", message: "Sessão expirada. Faça login novamente." };
+  }
+
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("name, logo_url")
+    .eq("id", workspaceId)
+    .single();
+
+  if (!workspace) {
+    return { status: "error", message: "Workspace não encontrado." };
+  }
+
+  if (confirmName !== workspace.name) {
+    return { status: "error", message: "O nome digitado não confere." };
+  }
+
+  const admin = createAdminClient();
+
+  // Grava o log antes de excluir: o FK de audit_logs.workspace_id agora é
+  // ON DELETE SET NULL (ver migration LGPD), então o registro sobrevive à
+  // exclusão, mas a linha do workspace ainda precisa existir nesse insert
+  // pra satisfazer o constraint.
+  await admin.from("audit_logs").insert({
+    workspace_id: workspaceId,
+    actor_id: user.id,
+    event_type: "workspace.deleted",
+    metadata: { name: workspace.name },
+  });
+
+  if (workspace.logo_url) {
+    const path = extractStoragePath(workspace.logo_url);
+    if (path) await admin.storage.from("workspace-assets").remove([path]);
+  }
+
+  const { error } = await supabase.from("workspaces").delete().eq("id", workspaceId);
+
+  if (error) {
+    return { status: "error", message: "Não foi possível excluir o workspace." };
+  }
+
+  redirect("/onboarding");
 }
