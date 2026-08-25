@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createRatelimiter, getClientIp } from "@/lib/upstash/ratelimit";
 import { escapeHtml } from "@/lib/utils";
+
+const ratelimit = createRatelimiter("unsubscribe", 20, "60 s");
 
 // Rota pública (sem sessão) — o link vive no rodapé de e-mails transacionais.
 // Reaproveita o token do convite como credencial: só quem recebeu aquele
 // e-mail específico tem esse valor.
 export async function GET(request: Request) {
+  const { success } = await ratelimit.limit(getClientIp(request.headers));
+  if (!success) {
+    return new NextResponse("Muitas tentativas. Tente novamente em instantes.", { status: 429 });
+  }
+
   const url = new URL(request.url);
   const token = url.searchParams.get("token");
 

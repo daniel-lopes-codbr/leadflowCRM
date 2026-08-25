@@ -10,7 +10,8 @@ if (existsSync(envPath)) {
     if (!line.includes("=") || line.trim().startsWith("#")) continue;
     const idx = line.indexOf("=");
     const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
+    const rawValue = line.slice(idx + 1).trim();
+    const value = /^(['"]).*\1$/.test(rawValue) ? rawValue.slice(1, -1) : rawValue;
     if (key && !(key in process.env)) process.env[key] = value;
   }
 }

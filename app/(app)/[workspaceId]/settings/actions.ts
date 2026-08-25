@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -7,7 +8,10 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import { createRatelimiter, getClientIp } from "@/lib/upstash/ratelimit";
 import { escapeHtml } from "@/lib/utils";
+
+const inviteRatelimit = createRatelimiter("invite", 5, "60 s");
 
 export type SettingsActionResult = { status: "success" } | { status: "error"; message: string };
 
@@ -35,6 +39,12 @@ export async function inviteMember(input: {
   email: string;
   role: "admin" | "member";
 }): Promise<SettingsActionResult> {
+  const ip = getClientIp(await headers());
+  const { success } = await inviteRatelimit.limit(ip);
+  if (!success) {
+    return { status: "error", message: "Muitos convites enviados. Tente novamente em instantes." };
+  }
+
   const supabase = createClient();
   const user = await requireUser(supabase);
 
