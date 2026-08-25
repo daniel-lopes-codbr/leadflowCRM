@@ -127,3 +127,18 @@
 .animate-float-slow {
   animation: float-slow 6s ease-in-out infinite;
 }
+
+/*
+ * Convenções de design do app (não geram CSS, é só documentação):
+ *
+ * z-index: todo overlay/portal (dialog, sheet, dropdown, select, tooltip)
+ * usa z-50, o default do Radix. Não há sobreposição entre eles hoje, então
+ * não existe uma escala 10/20/30/50 — se precisar de mais um nível,
+ * documentar aqui antes de usar um valor arbitrário como z-[9999].
+ *
+ * Tamanho de ícone (Lucide): h-3.5 w-3.5 para ícones inline em texto/badge
+ * ou dentro de botões compactos; h-4 w-4 para ícones de botão/nav padrão
+ * (a maioria dos casos); h-5 w-5 para ícones maiores e autônomos (logo em
+ * badge, gatilho do menu mobile). Evitar valores fora da escala padrão do
+ * Tailwind (ex.: h-4.5 não existe e não gera CSS nenhum).
+ */

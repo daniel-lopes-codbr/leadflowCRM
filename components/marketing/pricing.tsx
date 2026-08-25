@@ -34,7 +34,7 @@ const plans = [
 export function Pricing() {
   return (
     <section id="precos" className="bg-secondary/40 py-28">
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             Preços

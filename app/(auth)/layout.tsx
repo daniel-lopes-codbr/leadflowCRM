@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="mx-auto w-full max-w-6xl px-6 py-6">
         <Link href="/" className="inline-flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Workflow className="h-4.5 w-4.5" strokeWidth={2.25} />
+            <Workflow className="h-5 w-5" strokeWidth={2.25} />
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">LeadFlow</span>
         </Link>

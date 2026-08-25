@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export function Cta() {
   return (
     <section className="bg-background py-28">
-      <div className="mx-auto max-w-4xl px-6 text-center">
+      <div className="mx-auto max-w-6xl px-6 text-center">
         <h2 className="font-display text-4xl leading-tight tracking-tight text-foreground sm:text-5xl">
           Pronto para tirar seu funil da planilha?
         </h2>
