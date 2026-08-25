@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { escapeHtml } from "@/lib/utils";
 
 // Rota pública (sem sessão) — o link vive no rodapé de e-mails transacionais.
 // Reaproveita o token do convite como credencial: só quem recebeu aquele
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   await admin.from("email_opt_outs").upsert({ email: invite.email.toLowerCase() });
 
   return new NextResponse(
-    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8" /><title>Descadastro · LeadFlow CRM</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;text-align:center;color:#1e293b;"><h1 style="font-size:20px;">Descadastro confirmado</h1><p><strong>${invite.email}</strong> não vai mais receber e-mails do LeadFlow CRM.</p></body></html>`,
+    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8" /><title>Descadastro · LeadFlow CRM</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:80px auto;text-align:center;color:#1e293b;"><h1 style="font-size:20px;">Descadastro confirmado</h1><p><strong>${escapeHtml(invite.email)}</strong> não vai mais receber e-mails do LeadFlow CRM.</p></body></html>`,
     { headers: { "Content-Type": "text/html; charset=utf-8" } }
   );
 }

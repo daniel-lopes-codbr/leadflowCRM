@@ -7,11 +7,14 @@ import { PLAN_LIMITS } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createResendClient, FROM_EMAIL } from "@/lib/resend/client";
+import { escapeHtml } from "@/lib/utils";
 
 export type SettingsActionResult = { status: "success" } | { status: "error"; message: string };
 
 const ACCEPTED_LOGO_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+const inviteEmailSchema = z.string().trim().min(1, "Informe o e-mail.").email("Digite um e-mail válido.");
 
 async function requireUser(supabase: ReturnType<typeof createClient>) {
   const {
@@ -38,6 +41,12 @@ export async function inviteMember(input: {
   if (!user) {
     return { status: "error", message: "Sessão expirada. Faça login novamente." };
   }
+
+  const emailParsed = inviteEmailSchema.safeParse(input.email);
+  if (!emailParsed.success) {
+    return { status: "error", message: emailParsed.error.issues[0]?.message ?? "E-mail inválido." };
+  }
+  const email = emailParsed.data;
 
   const { data: workspace } = await supabase
     .from("workspaces")
@@ -71,7 +80,7 @@ export async function inviteMember(input: {
     .upsert(
       {
         workspace_id: input.workspaceId,
-        email: input.email,
+        email,
         role: input.role,
         invited_by: user.id,
         token: crypto.randomUUID(),
@@ -89,8 +98,9 @@ export async function inviteMember(input: {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const inviteUrl = `${appUrl}/signup?token=${invite.token}`;
+  const safeWorkspaceName = escapeHtml(workspace.name);
   const logoHeader = workspace.logo_url
-    ? `<img src="${workspace.logo_url}" alt="${workspace.name}" height="32" style="display:block;margin-bottom:16px;border-radius:6px;" />`
+    ? `<img src="${escapeHtml(workspace.logo_url)}" alt="${safeWorkspaceName}" height="32" style="display:block;margin-bottom:16px;border-radius:6px;" />`
     : "";
   const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?token=${invite.token}`;
   const footer = `<p style="margin-top:24px;font-size:12px;color:#94a3b8;">Não quer mais receber e-mails como este? <a href="${unsubscribeUrl}" style="color:#94a3b8;">Cancelar inscrição</a>.</p>`;
@@ -102,7 +112,7 @@ export async function inviteMember(input: {
   const { data: optedOut } = await admin
     .from("email_opt_outs")
     .select("email")
-    .eq("email", input.email.toLowerCase())
+    .eq("email", email.toLowerCase())
     .maybeSingle();
 
   if (optedOut) {
@@ -118,9 +128,9 @@ export async function inviteMember(input: {
     const resend = createResendClient();
     await resend.emails.send({
       from: FROM_EMAIL,
-      to: input.email,
+      to: email,
       subject: `Você foi convidado para o workspace ${workspace.name} no LeadFlow CRM`,
-      html: `${logoHeader}<p>Você foi convidado para colaborar no workspace <strong>${workspace.name}</strong> no LeadFlow CRM.</p><p><a href="${inviteUrl}">Aceitar convite e criar sua conta</a></p>${footer}`,
+      html: `${logoHeader}<p>Você foi convidado para colaborar no workspace <strong>${safeWorkspaceName}</strong> no LeadFlow CRM.</p><p><a href="${inviteUrl}">Aceitar convite e criar sua conta</a></p>${footer}`,
     });
   } catch {
     return {
@@ -135,7 +145,7 @@ export async function inviteMember(input: {
     workspace_id: input.workspaceId,
     actor_id: user.id,
     event_type: "member.invited",
-    metadata: { email: input.email, role: input.role },
+    metadata: { email, role: input.role },
   });
 
   return { status: "success" };
