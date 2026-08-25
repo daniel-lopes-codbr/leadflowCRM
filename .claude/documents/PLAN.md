@@ -261,10 +261,14 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 **Objetivo:** Publicar o projeto em produção na Vercel com monitoramento básico.
 
 **Entregas:**
-- [ ] Projeto Vercel conectado ao repositório
-- [ ] Variáveis de ambiente de produção (Supabase, Stripe, Resend)
-- [ ] Configuração de domínio customizado
-- [ ] Verificação de Vercel Logs para erros 500/crashes
-- [ ] Smoke test em produção (signup → workspace → lead → deal → billing)
+- [x] Projeto Vercel conectado ao repositório (via GitHub App, escopado ao repo)
+- [x] Variáveis de ambiente de produção (Supabase, Stripe, Resend)
+- [ ] Configuração de domínio customizado — adiado por escolha do usuário; app roda no domínio padrão da Vercel (`leadflowcrm-lopes14.vercel.app`) por enquanto
+- [x] Verificação de Vercel Logs para erros 500/crashes (nenhum erro de runtime na janela do deploy/smoke test)
+- [x] Smoke test em produção (signup → workspace → lead → deal → billing) — todas as etapas confirmadas, dados descartáveis limpos após o teste
+
+**Notas:**
+- Stripe em modo Teste em produção por decisão explícita do usuário (a conta já hospeda outro produto live; live mode fica para quando o billing for lançado de verdade — vai exigir novo webhook endpoint + chaves live).
+- Webhook de produção criado (`we_1U8Op9ALRdcL6ScKBxHKCVkT`) apontando para `/api/stripe/webhook`, gated por `metadata.workspace_id` — não interfere com o outro produto da conta.
 
 **Commit final:** `chore: deploy de produção na Vercel`
