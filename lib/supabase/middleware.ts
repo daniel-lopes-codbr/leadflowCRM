@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isSafeNextPath } from "@/lib/utils";
 
 // Páginas que só fazem sentido pra quem ainda não está logado — landing,
 // login, cadastro. Quem já tem sessão é mandado pro próprio workspace.
@@ -34,13 +35,6 @@ function isProtected(pathname: string) {
     PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     isWorkspaceRoute(pathname)
   );
-}
-
-// `next` chega como query param de fora (link, bookmark, redirect encadeado).
-// Só aceitamos caminho relativo de origem única — bloqueia
-// `//evil.com`, `https://evil.com` e `/\evil.com` (open redirect).
-function isSafeNextPath(path: string | null): path is string {
-  return !!path && path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\");
 }
 
 export async function updateSession(request: NextRequest) {
