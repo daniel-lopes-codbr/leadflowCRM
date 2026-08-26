@@ -360,3 +360,24 @@ Itens de prioridade média/baixa do benchmark, registrados pra não perder o con
 - [ ] Migrar cobrança do Pro de valor fixo para cobrança por usuário: novo Price no Stripe com `billing_scheme: per_unit`, checkout mandando a quantidade real de membros (em vez de `quantity: 1` fixo hoje), e sincronização da quantidade da assinatura toda vez que um convite é aceito ou um membro é removido (Stripe cuida do rateio proporcional automaticamente via `stripe.subscriptions.update`)
 
 **Commit final:** a definir junto com a implementação, depois que os pontos acima forem decididos (alguns exigem validação jurídica, não só técnica).
+
+---
+
+### M22. Termos de Uso e Política de Privacidade
+
+**Branch:** `docs/legal-pages`
+**Objetivo:** As rotas `/termos` e `/privacidade` já eram linkadas no rodapé do site e no fluxo de login/cadastro, mas retornavam 404 — não existia conteúdo nenhum. Motivado por uma pergunta direta do usuário: "se eu precisar encerrar o projeto, sou obrigado a manter o serviço rodando pra sempre pra quem está no plano Free?" A resposta é não, mas **só se isso estiver escrito nos Termos de Uso** — sem cláusula nenhuma, não existe esse direito reservado por escrito.
+
+**Decisão explícita do usuário:** implementar o conteúdo agora mesmo sem revisão jurídica prévia — "se deixar sem cláusula é pior do que ter a cláusula com brechas". Ambas as páginas têm um aviso visível de "rascunho pendente de revisão jurídica" no topo, e usam placeholders (`[A PREENCHER]`) para dados que só o usuário tem (razão social, CNPJ, endereço, foro, e-mail de contato/DPO) — **não devem ser publicadas como texto final sem revisão de advogado especializado em LGPD/direito digital, nem sem preencher os placeholders**.
+
+**Entregas:**
+- [x] Página `/termos` com cláusula explícita de modificação/suspensão/descontinuação do serviço (aviso prévio de 30 dias, direito de exportar dados antes do encerramento, exclusão definitiva depois — reaproveitando as funcionalidades de export/exclusão já existentes), cobrança/cancelamento, uso aceitável, limitação de responsabilidade, propriedade intelectual, foro
+- [x] Página `/privacidade` alinhada à LGPD: distinção entre LeadFlow como controlador (dados de conta) e operador (dados de leads inseridos pelo cliente), dados coletados, base legal, subprocessadores (Supabase, Stripe, Resend, Vercel), direitos do titular, retenção/exclusão, segurança, cookies
+- [x] Aviso de "rascunho pendente de revisão jurídica" visível em ambas as páginas
+- [x] Validado: `tsc`, lint e build limpos; rotas retornam 200 (antes retornavam 404); suíte E2E sem regressão
+
+**Pendências pós-implementação (não bloqueiam o merge, mas bloqueiam considerar o documento "final"):**
+- [ ] Preencher os placeholders (`[RAZÃO SOCIAL A PREENCHER]`, `[CNPJ A PREENCHER]`, `[ENDEREÇO A PREENCHER]`, `[CIDADE/COMARCA A PREENCHER]`, e-mails de contato/DPO)
+- [ ] Enviar para revisão de advogado especializado em LGPD/direito digital antes de tratar como texto definitivo
+
+**Commit final:** `feat: adiciona páginas de Termos de Uso e Política de Privacidade`
