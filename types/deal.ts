@@ -6,6 +6,7 @@ export interface Deal {
   value: number;
   leadId: string;
   leadName: string;
+  leadPhone: string;
   ownerId: string;
   ownerName: string;
   deadline: string;
