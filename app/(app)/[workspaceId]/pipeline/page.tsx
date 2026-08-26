@@ -13,22 +13,35 @@ export default async function PipelinePage(
   const params = await props.params;
   const supabase = createClient();
 
-  const [{ data: dealRows }, { data: leadRows }, { data: memberRows }] = await Promise.all([
-    supabase
-      .from("deals")
-      .select("id, title, value, status, deadline, lead_id, owner_id, leads(name, phone), profiles(name)")
-      .eq("workspace_id", params.workspaceId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("leads")
-      .select("id, name, company")
-      .eq("workspace_id", params.workspaceId)
-      .order("name"),
-    supabase
-      .from("memberships")
-      .select("profiles(id, name)")
-      .eq("workspace_id", params.workspaceId),
-  ]);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: dealRows }, { data: leadRows }, { data: memberRows }, { data: overdueRows }] =
+    await Promise.all([
+      supabase
+        .from("deals")
+        .select("id, title, value, status, deadline, lead_id, owner_id, leads(name, phone), profiles(name)")
+        .eq("workspace_id", params.workspaceId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("leads")
+        .select("id, name, company")
+        .eq("workspace_id", params.workspaceId)
+        .order("name"),
+      supabase
+        .from("memberships")
+        .select("profiles(id, name)")
+        .eq("workspace_id", params.workspaceId),
+      supabase
+        .from("activities")
+        .select("lead_id")
+        .eq("workspace_id", params.workspaceId)
+        .not("scheduled_at", "is", null)
+        .is("completed_at", null)
+        .is("canceled_at", null)
+        .lt("scheduled_at", today),
+    ]);
+
+  const overdueLeadIds = new Set((overdueRows ?? []).map((row) => row.lead_id));
 
   const deals: Deal[] = (dealRows ?? []).map((row) => {
     const lead = toOneRelation(
@@ -42,6 +55,7 @@ export default async function PipelinePage(
       leadId: row.lead_id ?? "",
       leadName: lead?.name ?? "Sem lead vinculado",
       leadPhone: lead?.phone ?? "",
+      hasOverdueFollowUp: row.lead_id ? overdueLeadIds.has(row.lead_id) : false,
       ownerId: row.owner_id ?? "",
       ownerName: owner?.name ?? "Sem responsável",
       deadline: row.deadline ?? "",

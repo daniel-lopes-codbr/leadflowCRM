@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarClock, MessageCircle } from "lucide-react";
+import { AlarmClockOff, CalendarClock, MessageCircle } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import type { Deal } from "@/types/deal";
@@ -35,6 +35,12 @@ export function DealCardBody({ deal, dragging = false }: { deal: Deal; dragging?
     >
       <p className="pr-7 text-sm font-medium leading-snug text-foreground">{deal.title}</p>
       <p className="mt-1 truncate text-xs text-muted-foreground">{deal.leadName}</p>
+      {deal.hasOverdueFollowUp && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-destructive">
+          <AlarmClockOff className="h-3.5 w-3.5" />
+          Follow-up atrasado
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">{formatCurrency(deal.value)}</span>

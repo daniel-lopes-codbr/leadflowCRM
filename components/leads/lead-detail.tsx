@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Building2, Loader2, Mail, MessageCircle, Phone, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Building2, CalendarPlus, Loader2, Mail, MessageCircle, Phone, Plus, Trash2, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,10 +18,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createActivity, deleteLead } from "@/app/(app)/[workspaceId]/leads/actions";
 import {
+  cancelFollowUp,
+  completeFollowUp,
+  createFollowUp,
+  rescheduleFollowUp,
+} from "@/app/(app)/[workspaceId]/leads/followup-actions";
+import {
   ActivityFormDialog,
   type ActivityFormValues,
 } from "@/components/leads/activity-form-dialog";
 import { ActivityTimeline } from "@/components/leads/activity-timeline";
+import { FollowUpFormDialog, type FollowUpFormValues } from "@/components/leads/followup-form-dialog";
+import { RescheduleFollowUpDialog } from "@/components/leads/reschedule-followup-dialog";
 import { StatusBadge } from "@/components/leads/status-badge";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import type { Activity } from "@/types/activity";
@@ -39,11 +47,51 @@ export function LeadDetail({
   const router = useRouter();
   const whatsappHref = buildWhatsappLink(lead.phone);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<Activity | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleActivitySubmit(values: ActivityFormValues) {
     const result = await createActivity(workspaceId, lead.id, values);
+    if (result.status === "success") {
+      router.refresh();
+    }
+    return result;
+  }
+
+  async function handleFollowUpSubmit(values: FollowUpFormValues) {
+    const result = await createFollowUp(workspaceId, lead.id, values);
+    if (result.status === "success") {
+      router.refresh();
+    }
+    return result;
+  }
+
+  async function handleComplete(activity: Activity) {
+    const result = await completeFollowUp(workspaceId, lead.id, activity.id);
+    if (result.status === "success") {
+      router.refresh();
+    }
+  }
+
+  async function handleCancel(activity: Activity) {
+    const result = await cancelFollowUp(workspaceId, lead.id, activity.id);
+    if (result.status === "success") {
+      router.refresh();
+    }
+  }
+
+  async function handleReschedule(newScheduledAt: string) {
+    if (!rescheduleTarget) {
+      return { status: "error" as const, message: "Follow-up não encontrado." };
+    }
+    const result = await rescheduleFollowUp(
+      workspaceId,
+      lead.id,
+      rescheduleTarget.id,
+      newScheduledAt
+    );
     if (result.status === "success") {
       router.refresh();
     }
@@ -126,14 +174,25 @@ export function LeadDetail({
         </Card>
 
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-foreground">Timeline de atividades</h2>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Registrar atividade
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setFollowUpDialogOpen(true)}>
+                <CalendarPlus className="h-4 w-4" />
+                Agendar follow-up
+              </Button>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Registrar atividade
+              </Button>
+            </div>
           </div>
-          <ActivityTimeline activities={activities} />
+          <ActivityTimeline
+            activities={activities}
+            onComplete={handleComplete}
+            onCancel={handleCancel}
+            onReschedule={setRescheduleTarget}
+          />
         </div>
       </div>
 
@@ -142,6 +201,21 @@ export function LeadDetail({
         onOpenChange={setDialogOpen}
         onSubmit={handleActivitySubmit}
       />
+
+      <FollowUpFormDialog
+        open={followUpDialogOpen}
+        onOpenChange={setFollowUpDialogOpen}
+        onSubmit={handleFollowUpSubmit}
+      />
+
+      {rescheduleTarget && (
+        <RescheduleFollowUpDialog
+          open={!!rescheduleTarget}
+          onOpenChange={(open) => !open && setRescheduleTarget(null)}
+          currentScheduledAt={rescheduleTarget.scheduledAt ?? ""}
+          onSubmit={handleReschedule}
+        />
+      )}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

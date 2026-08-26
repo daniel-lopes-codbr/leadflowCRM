@@ -305,14 +305,15 @@ Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD 
 2. Percebemos também que "campo de data" sozinho não é a mesma coisa que "lembrete de verdade". Hoje `activities.occurred_at` é literalmente "quando **aconteceu**" (registro retroativo) — não existe nenhuma forma de agendar uma ação futura, muito menos avisar o vendedor quando chegar a hora. Um painel passivo no Dashboard só ajuda quem lembra de abrir o CRM naquele dia. Por decisão do usuário, o lembrete precisa ser ativo: **e-mail no dia agendado**, via Resend (já configurado no projeto pro convite de membro) — não só um painel.
 
 **Entregas:**
-- [ ] Migration: campos de data agendada (futura) e conclusão nas atividades (ou tabela dedicada de tarefas vinculada a lead/negócio) — distinto de `occurred_at`, que continua sendo o registro retroativo de interações já feitas
-- [ ] Follow-up nunca é apagado de verdade — concluir ou cancelar são mudanças de status, sempre visíveis na timeline (mesmo princípio que já vale hoje pra `activities`, que não tem função de exclusão)
-- [ ] Reagendar um follow-up não sobrescreve a data silenciosamente: ou grava o histórico da mudança, ou cancela o antigo e cria um novo (mais simples, preserva o rastro)
-- [ ] **Reatribuição de responsável vira atividade automática na timeline**: quando `owner_id` de um lead ou negócio muda, a própria Server Action registra isso em `activities` (ex.: "Responsabilidade transferida de {vendedor anterior} para {novo vendedor}") — sem precisar de tabela nova, só uma inserção a mais no fluxo que já existe
-- [ ] **Lembrete ativo por e-mail**: job agendado (Vercel Cron, uma vez por dia) que verifica follow-ups com data agendada = hoje e ainda não concluídos, e envia e-mail ao responsável via Resend
-- [ ] Indicador visual de follow-up atrasado no card do lead/negócio
-- [ ] Painel "Follow-ups de hoje/atrasados" no Dashboard, ao lado do já existente "Prazos próximos" — complementa o e-mail, não substitui
-- [ ] RLS: mesma regra de isolamento por workspace já usada em `activities`
+- [x] Migration: campos `scheduled_at`/`completed_at`/`canceled_at` em `activities` (`occurred_at` virou nullable) — `supabase/migrations/20260827000001_followups.sql`
+- [x] Follow-up nunca é apagado de verdade — concluir ou cancelar são mudanças de status (`completeFollowUp`/`cancelFollowUp`), sempre visíveis na timeline
+- [x] Reagendar cancela o antigo e cria um novo (`rescheduleFollowUp`), preservando o rastro
+- [x] **Reatribuição de responsável vira atividade automática na timeline** — `lib/activities.ts` (`logOwnerChangeActivity`), chamado por `updateLead` e `updateDeal`
+- [x] **Lembrete ativo por e-mail** — `app/api/cron/followup-reminders/route.ts`, agendado via `vercel.json` (`0 12 * * *` = 09h BRT), protegido por `CRON_SECRET`
+- [x] Indicador visual de follow-up atrasado no card do Kanban (`hasOverdueFollowUp`)
+- [x] Painel "Follow-ups de hoje e atrasados" no Dashboard, ao lado do "Prazos próximos" — `components/dashboard/upcoming-followups.tsx`
+- [x] RLS: reaproveita as policies já existentes de `activities` (nenhuma mudança de RLS necessária, só colunas novas)
+- [x] Validado: `tsc`, lint e build limpos; suíte E2E sem regressão; verificação end-to-end via Playwright cobrindo follow-up pendente/concluído/atrasado, indicador no Kanban e histórico de troca de responsável
 
 **Commit final:** `feat: follow-up com lembrete por e-mail e histórico de responsabilidade em leads e negócios`
 

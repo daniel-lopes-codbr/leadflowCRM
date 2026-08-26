@@ -40,9 +40,11 @@ export default async function LeadDetailPage(
 
   const { data: activityRows } = await supabase
     .from("activities")
-    .select("id, lead_id, type, description, occurred_at, profiles(name)")
+    .select(
+      "id, lead_id, type, description, occurred_at, scheduled_at, completed_at, canceled_at, profiles(name)"
+    )
     .eq("lead_id", params.leadId)
-    .order("occurred_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   const activities: Activity[] = (activityRows ?? []).map((row) => {
     const author = toOneRelation(row.profiles as { name: string } | { name: string }[] | null);
@@ -53,6 +55,9 @@ export default async function LeadDetailPage(
       description: row.description,
       authorName: author?.name ?? "Usuário removido",
       occurredAt: row.occurred_at,
+      scheduledAt: row.scheduled_at,
+      completedAt: row.completed_at,
+      canceledAt: row.canceled_at,
     };
   });
 
