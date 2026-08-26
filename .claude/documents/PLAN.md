@@ -341,3 +341,22 @@ Itens de prioridade média/baixa do benchmark, registrados pra não perder o con
 - **App mobile nativo** — prioridade baixa; nenhum concorrente pesquisado trata isso como diferencial decisivo de venda. Web responsivo resolve por enquanto.
 - **API pública** — prioridade baixa; sem demanda real de integração de terceiros ainda.
 - **Inbox multicanal unificado (WhatsApp/Instagram/SMS dentro do CRM, estilo Kommo)** — prioridade baixa; infraestrutura de mensageria em tempo real é projeto grande por si só, só reavaliar se o produto decidir competir nesse nicho especificamente.
+
+---
+
+### M21. Revisão de precificação e antiabuso do plano Free
+
+**Objetivo:** Dois problemas identificados numa conversa de revisão pós-benchmark, sem relação direta com M18-M20: (1) hoje o Pro cobra valor fixo (R$49/mês) independente do número de usuários, contrariando o padrão unânime dos 10 concorrentes pesquisados (todos cobram por usuário) — provavelmente o maior ponto de alavancagem financeira identificado até agora; (2) o limite de 25 leads no Free é baixo demais pra deixar alguém experimentar valor real antes de decidir assinar, mas removê-lo sem nenhuma trava equivalente abre brecha pra abuso — usar o Free como um "Pro grátis" indefinidamente (inclusive via múltiplos e-mails/workspaces) e usar a exportação de dados como porta de saída depois de extrair todo o valor.
+
+**Diferente do M18-M20: este milestone tem decisões de negócio e uma pendência jurídica em aberto, não é implementação pronta pra puxar direto.**
+
+**Decisão já fechada:**
+- [ ] Remover o limite fixo de 25 leads do plano Free
+
+**Pontos a decidir antes de implementar:**
+- [ ] Substituir o limite de 25 leads por um critério que desincentive abuso sem prejudicar quem está testando de verdade — candidato mais forte: limite de **leads novos por mês** em vez de total acumulado (trava a velocidade de acúmulo de uma base completa, sem impor um teto baixo pra sempre)
+- [ ] Mecanismo contra "farm" de contas grátis (múltiplos e-mails/workspaces simulando um time Pro sem pagar) — considerar detecção de padrão suspeito (mesmo domínio de e-mail criando vários workspaces free, etc.); **evitar exigir cartão de crédito no cadastro Free**, isso mataria a conversão de quem só quer testar
+- [ ] Revisar a política de exportação de dados (CSV/JSON) — hoje qualquer admin exporta tudo, em qualquer plano, a qualquer momento (`/api/workspaces/[workspaceId]/export`). Considerar restringir **exportação em massa** ao plano Pro, mantendo exclusão individual de dado disponível em todos os planos. Importante: isso não fere a LGPD em si — a lei protege o titular do dado (o lead), não garante exportação em massa gratuita e ilimitada pro tenant/workspace — mas é uma decisão com implicação legal real. **Precisa de validação com alguém que entenda de LGPD antes de travar essa regra definitivamente**, não é call só de produto/engenharia.
+- [ ] Migrar cobrança do Pro de valor fixo para cobrança por usuário: novo Price no Stripe com `billing_scheme: per_unit`, checkout mandando a quantidade real de membros (em vez de `quantity: 1` fixo hoje), e sincronização da quantidade da assinatura toda vez que um convite é aceito ou um membro é removido (Stripe cuida do rateio proporcional automaticamente via `stripe.subscriptions.update`)
+
+**Commit final:** a definir junto com a implementação, depois que os pontos acima forem decididos (alguns exigem validação jurídica, não só técnica).
