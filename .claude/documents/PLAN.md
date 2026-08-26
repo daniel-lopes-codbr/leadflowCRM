@@ -292,18 +292,22 @@ Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD 
 
 ---
 
-### M19. Follow-up com lembrete (tarefas com data)
+### M19. Follow-up com lembrete (tarefas com data) + histórico de responsabilidade
 **Branch:** `feature/lead-followups`
 **Objetivo:** Gap mais citado em toda a pesquisa de mercado — hoje o LeadFlow só tem "Nota" manual sem data. Evolução da tabela `activities` já existente, não uma feature nova do zero.
 
+**Escopo revisado (2026-08-26):** ao planejar a implementação, identificamos uma lacuna real que o follow-up sozinho não resolve — se um vendedor sai da empresa e o lead/negócio é reatribuído, o próximo vendedor não tem como saber quem era o responsável antes nem o que já foi combinado, porque hoje a troca de `owner_id` em `leads`/`deals` acontece silenciosamente (confirmado no código: `updateLead`/`updateDeal` sobrescrevem `owner_id` sem deixar rastro nenhum). Sem isso, "melhorar o follow-up" não agrega valor de verdade pro cenário de troca de vendedor, que é justamente onde histórico mais importa. Adicionado ao escopo antes de começar a implementação.
+
 **Entregas:**
 - [ ] Migration: campos de data prevista e conclusão nas atividades (ou tabela dedicada de tarefas vinculada a lead/negócio)
+- [ ] Follow-up nunca é apagado de verdade — concluir ou cancelar são mudanças de status, sempre visíveis na timeline (mesmo princípio que já vale hoje pra `activities`, que não tem função de exclusão)
+- [ ] Reagendar um follow-up não sobrescreve a data silenciosamente: ou grava o histórico da mudança, ou cancela o antigo e cria um novo (mais simples, preserva o rastro)
+- [ ] **Reatribuição de responsável vira atividade automática na timeline**: quando `owner_id` de um lead ou negócio muda, a própria Server Action registra isso em `activities` (ex.: "Responsabilidade transferida de {vendedor anterior} para {novo vendedor}") — sem precisar de tabela nova, só uma inserção a mais no fluxo que já existe
 - [ ] Indicador visual de follow-up atrasado no card do lead/negócio
 - [ ] Painel "Follow-ups de hoje/atrasados" no Dashboard, ao lado do já existente "Prazos próximos"
-- [ ] Marcar follow-up como concluído (com timestamp)
 - [ ] RLS: mesma regra de isolamento por workspace já usada em `activities`
 
-**Commit final:** `feat: follow-up com lembrete em leads e negócios`
+**Commit final:** `feat: follow-up com lembrete e histórico de responsabilidade em leads e negócios`
 
 ---
 
