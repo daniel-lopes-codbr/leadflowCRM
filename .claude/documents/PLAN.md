@@ -296,18 +296,22 @@ Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD 
 **Branch:** `feature/lead-followups`
 **Objetivo:** Gap mais citado em toda a pesquisa de mercado — hoje o LeadFlow só tem "Nota" manual sem data. Evolução da tabela `activities` já existente, não uma feature nova do zero.
 
-**Escopo revisado (2026-08-26):** ao planejar a implementação, identificamos uma lacuna real que o follow-up sozinho não resolve — se um vendedor sai da empresa e o lead/negócio é reatribuído, o próximo vendedor não tem como saber quem era o responsável antes nem o que já foi combinado, porque hoje a troca de `owner_id` em `leads`/`deals` acontece silenciosamente (confirmado no código: `updateLead`/`updateDeal` sobrescrevem `owner_id` sem deixar rastro nenhum). Sem isso, "melhorar o follow-up" não agrega valor de verdade pro cenário de troca de vendedor, que é justamente onde histórico mais importa. Adicionado ao escopo antes de começar a implementação.
+**Escopo revisado (2026-08-26):** duas rodadas de revisão antes de começar a implementação:
+
+1. Identificamos que o follow-up sozinho não resolve o cenário mais crítico de perda de histórico: se um vendedor sai da empresa e o lead/negócio é reatribuído, o próximo vendedor não tem como saber quem era o responsável antes nem o que já foi combinado, porque hoje a troca de `owner_id` em `leads`/`deals` acontece silenciosamente (confirmado no código: `updateLead`/`updateDeal` sobrescrevem `owner_id` sem deixar rastro nenhum).
+2. Percebemos também que "campo de data" sozinho não é a mesma coisa que "lembrete de verdade". Hoje `activities.occurred_at` é literalmente "quando **aconteceu**" (registro retroativo) — não existe nenhuma forma de agendar uma ação futura, muito menos avisar o vendedor quando chegar a hora. Um painel passivo no Dashboard só ajuda quem lembra de abrir o CRM naquele dia. Por decisão do usuário, o lembrete precisa ser ativo: **e-mail no dia agendado**, via Resend (já configurado no projeto pro convite de membro) — não só um painel.
 
 **Entregas:**
-- [ ] Migration: campos de data prevista e conclusão nas atividades (ou tabela dedicada de tarefas vinculada a lead/negócio)
+- [ ] Migration: campos de data agendada (futura) e conclusão nas atividades (ou tabela dedicada de tarefas vinculada a lead/negócio) — distinto de `occurred_at`, que continua sendo o registro retroativo de interações já feitas
 - [ ] Follow-up nunca é apagado de verdade — concluir ou cancelar são mudanças de status, sempre visíveis na timeline (mesmo princípio que já vale hoje pra `activities`, que não tem função de exclusão)
 - [ ] Reagendar um follow-up não sobrescreve a data silenciosamente: ou grava o histórico da mudança, ou cancela o antigo e cria um novo (mais simples, preserva o rastro)
 - [ ] **Reatribuição de responsável vira atividade automática na timeline**: quando `owner_id` de um lead ou negócio muda, a própria Server Action registra isso em `activities` (ex.: "Responsabilidade transferida de {vendedor anterior} para {novo vendedor}") — sem precisar de tabela nova, só uma inserção a mais no fluxo que já existe
+- [ ] **Lembrete ativo por e-mail**: job agendado (Vercel Cron, uma vez por dia) que verifica follow-ups com data agendada = hoje e ainda não concluídos, e envia e-mail ao responsável via Resend
 - [ ] Indicador visual de follow-up atrasado no card do lead/negócio
-- [ ] Painel "Follow-ups de hoje/atrasados" no Dashboard, ao lado do já existente "Prazos próximos"
+- [ ] Painel "Follow-ups de hoje/atrasados" no Dashboard, ao lado do já existente "Prazos próximos" — complementa o e-mail, não substitui
 - [ ] RLS: mesma regra de isolamento por workspace já usada em `activities`
 
-**Commit final:** `feat: follow-up com lembrete e histórico de responsabilidade em leads e negócios`
+**Commit final:** `feat: follow-up com lembrete por e-mail e histórico de responsabilidade em leads e negócios`
 
 ---
 
