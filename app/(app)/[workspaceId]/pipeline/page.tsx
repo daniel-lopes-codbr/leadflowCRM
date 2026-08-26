@@ -16,7 +16,7 @@ export default async function PipelinePage(
   const [{ data: dealRows }, { data: leadRows }, { data: memberRows }] = await Promise.all([
     supabase
       .from("deals")
-      .select("id, title, value, status, deadline, lead_id, owner_id, leads(name), profiles(name)")
+      .select("id, title, value, status, deadline, lead_id, owner_id, leads(name, phone), profiles(name)")
       .eq("workspace_id", params.workspaceId)
       .order("created_at", { ascending: false }),
     supabase
@@ -31,7 +31,9 @@ export default async function PipelinePage(
   ]);
 
   const deals: Deal[] = (dealRows ?? []).map((row) => {
-    const lead = toOneRelation(row.leads as { name: string } | { name: string }[] | null);
+    const lead = toOneRelation(
+      row.leads as { name: string; phone: string | null } | { name: string; phone: string | null }[] | null
+    );
     const owner = toOneRelation(row.profiles as { name: string } | { name: string }[] | null);
     return {
       id: row.id,
@@ -39,6 +41,7 @@ export default async function PipelinePage(
       value: Number(row.value),
       leadId: row.lead_id ?? "",
       leadName: lead?.name ?? "Sem lead vinculado",
+      leadPhone: lead?.phone ?? "",
       ownerId: row.owner_id ?? "",
       ownerName: owner?.name ?? "Sem responsável",
       deadline: row.deadline ?? "",

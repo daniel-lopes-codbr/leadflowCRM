@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Building2, Loader2, Mail, Phone, Plus, Trash2, User } from "lucide-react";
+import { ArrowLeft, Building2, Loader2, Mail, MessageCircle, Phone, Plus, Trash2, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +23,7 @@ import {
 } from "@/components/leads/activity-form-dialog";
 import { ActivityTimeline } from "@/components/leads/activity-timeline";
 import { StatusBadge } from "@/components/leads/status-badge";
+import { buildWhatsappLink } from "@/lib/whatsapp";
 import type { Activity } from "@/types/activity";
 import type { Lead } from "@/types/lead";
 
@@ -36,6 +37,7 @@ export function LeadDetail({
   activities: Activity[];
 }) {
   const router = useRouter();
+  const whatsappHref = buildWhatsappLink(lead.phone);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -102,7 +104,19 @@ export function LeadDetail({
             </div>
             <div className="flex items-center gap-2.5 text-muted-foreground">
               <Phone className="h-4 w-4 shrink-0" />
-              {lead.phone}
+              {whatsappHref ? (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground hover:underline"
+                >
+                  {lead.phone}
+                  <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
+                </a>
+              ) : (
+                lead.phone
+              )}
             </div>
             <div className="flex items-center gap-2.5 text-muted-foreground">
               <User className="h-4 w-4 shrink-0" />

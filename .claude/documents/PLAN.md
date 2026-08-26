@@ -284,9 +284,12 @@ Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD 
 **Objetivo:** Eliminar a fricção de copiar/colar o telefone do lead pra abrir uma conversa — não é integração de API (cara, burocrática, exige verificação de Business), é um link `wa.me` com o número já preenchido.
 
 **Entregas:**
-- [ ] Botão/ícone de WhatsApp no card do lead (Kanban) e na página de detalhes do lead, abrindo `https://wa.me/<telefone>` em nova aba
-- [ ] Normalização do telefone armazenado (DDI+DDD) para montar o link corretamente
-- [ ] Tratamento de lead sem telefone válido (esconder ou desabilitar o botão)
+- [x] Botão/ícone de WhatsApp no card do lead (Kanban) e na página de detalhes do lead, abrindo `https://wa.me/<telefone>` em nova aba
+- [x] Normalização do telefone armazenado (DDI+DDD) para montar o link corretamente — `lib/whatsapp.ts`
+- [x] Tratamento de lead sem telefone válido (esconder o botão — `buildWhatsappLink` retorna `null`)
+- [x] Validado: `tsc`, lint e build limpos; suíte E2E sem regressão; verificação end-to-end via Playwright confirmando href/aria-label/target corretos no card do Kanban
+
+**Nota de implementação:** o link do WhatsApp no card do Kanban fica fora do `<button>` arrastável (elemento irmão, posicionado absolutamente) — colocar dentro geraria HTML inválido (elemento interativo aninhado) e conflito real com os listeners de pointer do `useDraggable`, que fariam o clique no link também disparar o drag/abrir o modal de edição do negócio.
 
 **Commit final:** `feat: link direto para WhatsApp no lead`
 
