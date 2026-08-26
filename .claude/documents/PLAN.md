@@ -272,3 +272,64 @@ Roteiro de execução derivado de `ProductPRD.md` e `CLAUDE.md`. Estratégia: co
 - Webhook de produção criado (`we_1U8Op9ALRdcL6ScKBxHKCVkT`) apontando para `/api/stripe/webhook`, gated por `metadata.workspace_id` — não interfere com o outro produto da conta.
 
 **Commit final:** `chore: deploy de produção na Vercel`
+
+---
+
+## Roadmap pós-lançamento (benchmark competitivo)
+
+Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD Station CRM, PipeRun, Ploomes, Moskit CRM, Kommo/amoCRM, Nectar CRM, Pipedrive, HubSpot CRM, noCRM.io) pra identificar lacunas reais do LeadFlow frente ao setor. Critério de priorização: impacto no público-alvo (PME/freelancer brasileiro) ÷ esforço pra um dev solo — não é "ter tudo que os grandes têm". Só as prioridades altas viram milestone agora; o resto fica registrado como backlog considerado, para retomar quando fizer sentido.
+
+### M18. Link direto para WhatsApp no lead
+**Branch:** `feature/whatsapp-link`
+**Objetivo:** Eliminar a fricção de copiar/colar o telefone do lead pra abrir uma conversa — não é integração de API (cara, burocrática, exige verificação de Business), é um link `wa.me` com o número já preenchido.
+
+**Entregas:**
+- [ ] Botão/ícone de WhatsApp no card do lead (Kanban) e na página de detalhes do lead, abrindo `https://wa.me/<telefone>` em nova aba
+- [ ] Normalização do telefone armazenado (DDI+DDD) para montar o link corretamente
+- [ ] Tratamento de lead sem telefone válido (esconder ou desabilitar o botão)
+
+**Commit final:** `feat: link direto para WhatsApp no lead`
+
+---
+
+### M19. Follow-up com lembrete (tarefas com data)
+**Branch:** `feature/lead-followups`
+**Objetivo:** Gap mais citado em toda a pesquisa de mercado — hoje o LeadFlow só tem "Nota" manual sem data. Evolução da tabela `activities` já existente, não uma feature nova do zero.
+
+**Entregas:**
+- [ ] Migration: campos de data prevista e conclusão nas atividades (ou tabela dedicada de tarefas vinculada a lead/negócio)
+- [ ] Indicador visual de follow-up atrasado no card do lead/negócio
+- [ ] Painel "Follow-ups de hoje/atrasados" no Dashboard, ao lado do já existente "Prazos próximos"
+- [ ] Marcar follow-up como concluído (com timestamp)
+- [ ] RLS: mesma regra de isolamento por workspace já usada em `activities`
+
+**Commit final:** `feat: follow-up com lembrete em leads e negócios`
+
+---
+
+### M20. Upload de documentos e anexos
+**Branch:** `feature/attachments`
+**Objetivo:** Feature de entrada em 8 dos 10 concorrentes pesquisados — anexar propostas/contratos/comprovantes a leads e negócios. Mesmo padrão já usado no bucket `workspace-assets` (Supabase Storage, S3-compatible, upload/download em stream, RLS por workspace), não reinventar a arquitetura.
+
+**Entregas:**
+- [ ] Migration: tabela `attachments` (lead_id/deal_id, workspace_id, nome, tipo, tamanho, path no Storage, autor, criado_em) + RLS por workspace
+- [ ] Bucket dedicado (ou pasta isolada por workspace num bucket existente) com policy de acesso restrita a membros do workspace
+- [ ] Upload via signed URL direto do cliente pro Storage (sem o Next.js fazer proxy do arquivo inteiro)
+- [ ] Lista de anexos + download na página de detalhes do lead/negócio
+- [ ] Exclusão de anexo (remove do Storage e da tabela)
+- [ ] Limite de tamanho por arquivo e tipos aceitos, validados no client e no servidor
+
+**Commit final:** `feat: upload de documentos e anexos em leads e negócios`
+
+---
+
+### Backlog considerado (sem milestone agora)
+
+Itens de prioridade média/baixa do benchmark, registrados pra não perder o contexto — decisão de quando (ou se) puxar cada um fica pro usuário, conforme uso real dos clientes:
+
+- **Formulário público de captura de lead (web-to-lead)** — prioridade média; página pública que insere direto na tabela `leads` do workspace certo.
+- **Sequência simples de follow-up automático** (ex.: sem atividade em N dias → lembrete automático) — prioridade média; depende do M19 estar validado primeiro.
+- **Assinatura eletrônica** — prioridade baixa; mesmo concorrentes maduros (PipeRun, Ploomes) tratam como módulo pago à parte pela complexidade jurídica (ICP-Brasil). Quando fizer sentido, integrar com provedor terceiro (Clicksign/D4Sign/Autentique) em vez de construir do zero.
+- **App mobile nativo** — prioridade baixa; nenhum concorrente pesquisado trata isso como diferencial decisivo de venda. Web responsivo resolve por enquanto.
+- **API pública** — prioridade baixa; sem demanda real de integração de terceiros ainda.
+- **Inbox multicanal unificado (WhatsApp/Instagram/SMS dentro do CRM, estilo Kommo)** — prioridade baixa; infraestrutura de mensageria em tempo real é projeto grande por si só, só reavaliar se o produto decidir competir nesse nicho especificamente.
