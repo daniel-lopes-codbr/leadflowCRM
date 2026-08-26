@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { logOwnerChangeActivity } from "@/lib/activities";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVITY_TYPES } from "@/types/activity";
@@ -109,6 +110,13 @@ export async function updateLead(
     return { status: "error", message: firstIssueMessage(parsed.error) };
   }
 
+  const { data: currentLead } = await supabase
+    .from("leads")
+    .select("owner_id")
+    .eq("id", leadId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("leads")
     .update({
@@ -125,6 +133,16 @@ export async function updateLead(
 
   if (error) {
     return { status: "error", message: "Não foi possível salvar as alterações." };
+  }
+
+  if (currentLead && currentLead.owner_id !== parsed.data.ownerId) {
+    await logOwnerChangeActivity(supabase, {
+      workspaceId,
+      leadId,
+      previousOwnerId: currentLead.owner_id,
+      newOwnerId: parsed.data.ownerId,
+      actorId: user.id,
+    });
   }
 
   revalidatePath(`/${workspaceId}/leads`);

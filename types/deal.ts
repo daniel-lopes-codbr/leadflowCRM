@@ -7,6 +7,7 @@ export interface Deal {
   leadId: string;
   leadName: string;
   leadPhone: string;
+  hasOverdueFollowUp: boolean;
   ownerId: string;
   ownerName: string;
   deadline: string;

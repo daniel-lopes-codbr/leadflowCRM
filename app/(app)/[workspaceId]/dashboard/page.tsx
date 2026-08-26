@@ -2,6 +2,7 @@ import { BadgePercent, Contact, TrendingUp, Wallet } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesFunnelChart } from "@/components/dashboard/sales-funnel-chart";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
+import { UpcomingFollowUps } from "@/components/dashboard/upcoming-followups";
 import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
@@ -14,12 +15,15 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
   const params = await props.params;
   const supabase = createClient();
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+
   const [
     {
       data: { user },
     },
     { count: totalLeads },
     { data: dealRows },
+    { data: followUpRows },
   ] = await Promise.all([
     supabase.auth.getUser(),
     supabase
@@ -30,7 +34,20 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
       .from("deals")
       .select("id, title, value, status, deadline, lead_id, owner_id, leads(name, phone), profiles(name)")
       .eq("workspace_id", params.workspaceId),
+    supabase
+      .from("activities")
+      .select("id, description, type, scheduled_at, lead_id, leads(name, owner_id)")
+      .eq("workspace_id", params.workspaceId)
+      .not("scheduled_at", "is", null)
+      .is("completed_at", null)
+      .is("canceled_at", null)
+      .lte("scheduled_at", todayIso)
+      .order("scheduled_at", { ascending: true }),
   ]);
+
+  const overdueLeadIds = new Set(
+    (followUpRows ?? []).filter((row) => row.scheduled_at! < todayIso).map((row) => row.lead_id)
+  );
 
   const deals: Deal[] = (dealRows ?? []).map((row) => {
     const lead = toOneRelation(
@@ -44,12 +61,31 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
       leadId: row.lead_id ?? "",
       leadName: lead?.name ?? "Sem lead vinculado",
       leadPhone: lead?.phone ?? "",
+      hasOverdueFollowUp: row.lead_id ? overdueLeadIds.has(row.lead_id) : false,
       ownerId: row.owner_id ?? "",
       ownerName: owner?.name ?? "Sem responsável",
       deadline: row.deadline ?? "",
       status: row.status as LeadStatus,
     };
   });
+
+  const upcomingFollowUps = (followUpRows ?? [])
+    .map((row) => {
+      const lead = toOneRelation(
+        row.leads as { name: string; owner_id: string | null } | { name: string; owner_id: string | null }[] | null
+      );
+      return {
+        id: row.id,
+        leadId: row.lead_id,
+        leadName: lead?.name ?? "Sem lead vinculado",
+        description: row.description,
+        type: row.type,
+        scheduledAt: row.scheduled_at!,
+        overdue: row.scheduled_at! < todayIso,
+        ownerId: lead?.owner_id ?? null,
+      };
+    })
+    .filter((followUp) => followUp.ownerId === user?.id);
 
   const openDeals = deals.filter(
     (deal) => deal.status !== "Fechado Ganho" && deal.status !== "Fechado Perdido"
@@ -99,7 +135,10 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <SalesFunnelChart dealsByStatus={dealsByStatus} />
-        <UpcomingDeadlines deals={upcomingDeals} workspaceId={params.workspaceId} />
+        <div className="space-y-4">
+          <UpcomingDeadlines deals={upcomingDeals} workspaceId={params.workspaceId} />
+          <UpcomingFollowUps followUps={upcomingFollowUps} workspaceId={params.workspaceId} />
+        </div>
       </div>
     </div>
   );

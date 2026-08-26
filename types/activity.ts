@@ -1,4 +1,4 @@
-export const ACTIVITY_TYPES = ["Ligação", "E-mail", "Reunião", "Nota"] as const;
+export const ACTIVITY_TYPES = ["Ligação", "E-mail", "Reunião", "Nota", "Responsável"] as const;
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 
@@ -8,5 +8,22 @@ export interface Activity {
   type: ActivityType;
   description: string;
   authorName: string;
-  occurredAt: string;
+  occurredAt: string | null;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  canceledAt: string | null;
+}
+
+export type FollowUpStatus = "log" | "pending" | "overdue" | "completed" | "canceled";
+
+// "log" cobre tanto atividades comuns (Nota/Ligação/etc, sem scheduledAt)
+// quanto follow-ups já concluídos/cancelados — em ambos os casos é só
+// histórico, sem ação pendente pro usuário.
+export function getFollowUpStatus(activity: Activity): FollowUpStatus {
+  if (!activity.scheduledAt) return "log";
+  if (activity.completedAt) return "completed";
+  if (activity.canceledAt) return "canceled";
+
+  const today = new Date().toISOString().slice(0, 10);
+  return activity.scheduledAt < today ? "overdue" : "pending";
 }
