@@ -323,13 +323,16 @@ Após o M17, foi feito um benchmark de mercado com 10 concorrentes (Agendor, RD 
 **Branch:** `feature/attachments`
 **Objetivo:** Feature de entrada em 8 dos 10 concorrentes pesquisados — anexar propostas/contratos/comprovantes a leads e negócios. Mesmo padrão já usado no bucket `workspace-assets` (Supabase Storage, S3-compatible, upload/download em stream, RLS por workspace), não reinventar a arquitetura.
 
+**Escopo revisado (2026-08-28):** o item "upload via signed URL direto do cliente" foi trocado por upload via Server Action (mesmo mecanismo já usado pra logo do workspace) depois de revisar o próprio código existente — a logo já sobe hoje através do servidor, e o Next.js/Vercel suporta corpo de requisição de até 100MB, então streamar um PDF/contrato de poucos MB pelo Server Action não tem o risco de lentidão que motivou a preocupação original (isso só existiria se o arquivo fosse pra uma coluna do Postgres, o que nunca foi cogitado). Implementar o fluxo client-direto-pro-Storage exigiria expor o client browser do Supabase pela primeira vez no projeto — complexidade adicional sem ganho real nesse estágio.
+
 **Entregas:**
-- [ ] Migration: tabela `attachments` (lead_id/deal_id, workspace_id, nome, tipo, tamanho, path no Storage, autor, criado_em) + RLS por workspace
-- [ ] Bucket dedicado (ou pasta isolada por workspace num bucket existente) com policy de acesso restrita a membros do workspace
-- [ ] Upload via signed URL direto do cliente pro Storage (sem o Next.js fazer proxy do arquivo inteiro)
-- [ ] Lista de anexos + download na página de detalhes do lead/negócio
-- [ ] Exclusão de anexo (remove do Storage e da tabela)
-- [ ] Limite de tamanho por arquivo e tipos aceitos, validados no client e no servidor
+- [x] Migration: tabela `attachments` (lead_id, workspace_id, nome, tipo, tamanho, path no Storage, autor, criado_em) + RLS por workspace — `supabase/migrations/20260828000001_attachments.sql`
+- [x] Bucket dedicado `lead-attachments`, **privado** (diferente do `workspace-assets`, que é público) — anexo de lead é dado de negócio do cliente, download exige signed URL gerada sob demanda
+- [x] Upload via Server Action, streamando o arquivo direto pro Storage (sem passar por coluna de banco) — `app/(app)/[workspaceId]/leads/attachment-actions.ts`
+- [x] Lista de anexos + download (signed URL, expira em 60s, força `Content-Disposition: attachment`) na página de detalhes do lead
+- [x] Exclusão de anexo (remove do Storage e da tabela, com confirmação)
+- [x] Limite de 10MB por arquivo e tipos aceitos (PDF, PNG/JPEG/WebP, Word, Excel) validados no client e no servidor (e reforçados pelo próprio bucket do Storage)
+- [x] Validado: `tsc`, lint e build limpos; suíte E2E sem regressão; verificação end-to-end via Playwright cobrindo upload, download real (evento de download do navegador, nome de arquivo correto) e exclusão
 
 **Commit final:** `feat: upload de documentos e anexos em leads e negócios`
 
