@@ -12,6 +12,11 @@ export type AuthActionResult =
 // caso de um único IP variando o e-mail alvo em tentativas automatizadas.
 const loginRatelimit = createRatelimiter("login", 10, "60 s");
 const signupRatelimit = createRatelimiter("signup", 5, "60 s");
+// Segunda camada, janela de 24h (86400s): o limite de 60s acima só barra
+// script automatizado em rajada — alguém criando contas manualmente devagar
+// ao longo do dia passa direto por ele. Este pega esse padrão sem incomodar
+// quem só está testando o produto (M21, antiabuso do Free).
+const signupDailyRatelimit = createRatelimiter("signup-daily", 5, "86400 s");
 
 export async function login(input: {
   email: string;
@@ -50,8 +55,12 @@ export async function signup(input: {
   next?: string;
 }): Promise<AuthActionResult | void> {
   const requestHeaders = await headers();
-  const { success } = await signupRatelimit.limit(getClientIp(requestHeaders));
-  if (!success) {
+  const ip = getClientIp(requestHeaders);
+  const [burst, daily] = await Promise.all([
+    signupRatelimit.limit(ip),
+    signupDailyRatelimit.limit(ip),
+  ]);
+  if (!burst.success || !daily.success) {
     return { status: "error", message: "Muitas tentativas. Tente novamente em instantes." };
   }
 
