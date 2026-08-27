@@ -366,11 +366,42 @@ Itens de prioridade média/baixa do benchmark, registrados pra não perder o con
   - **Detecção de domínio de e-mail reutilizado**: `countSiblingFreeWorkspaces` em `app/(auth)/onboarding/actions.ts` — ao criar um workspace, verifica quantos outros workspaces Free já têm admin com e-mail do mesmo domínio (ignorando provedores públicos como Gmail/Hotmail via `lib/email-domains.ts`); a partir de 3, enriquece o `audit_logs` já existente (`workspace.created`) com `flagged_domain_reuse`/`sibling_free_workspaces` pra revisão manual — não bloqueia a criação, só deixa rastro pro founder investigar.
   - Validado via Playwright: rate limit diário bloqueia após esgotar a cota (confirmado inclusive persistindo entre execuções de teste, prova de que é real no Redis); detecção de domínio confirmada criando 3 workspaces free com domínio compartilhado + um 4º via fluxo real de onboarding, checando o `audit_logs` resultante. Suíte E2E completa sem regressão.
 
+Os dois itens que dependiam de decisão de negócio/jurídico (sem ETA) foram movidos pro **M24**, pra não deixar este milestone em aberto indefinidamente. M21 é considerado entregue com o escopo acima.
+
+**Commit final:** um por item, conforme cada um foi decidido e implementado (não foi um commit único como M18-M20).
+
+---
+
+### M23. Follow-up no Pipeline + horário no agendamento
+
+**Branch:** `feature/pipeline-followup-ux`
+**Objetivo:** Duas lacunas de UX reais encontradas pelo usuário usando o próprio produto (M19 já em produção), sem relação com preço/negócio: (1) ao mover um negócio de coluna no Pipeline e clicar no card pra conferir, o modal de edição do negócio não tinha nenhum lugar pra registrar ou ver follow-ups do lead — só existia na página de detalhes do lead, obrigando a sair do Pipeline; (2) o agendamento de follow-up só tinha campo de data, sem horário — reflexo de `activities.scheduled_at` ser `date`, não `timestamptz`.
+
+**Entregas:**
+- [x] Migration: `scheduled_at` de `date` para `timestamptz` — `supabase/migrations/20260901000001_followup_time.sql`, idempotente, sem backfill necessário
+- [x] Campo de horário (`type="time"`) somado ao de data em `FollowUpFormDialog` e `RescheduleFollowUpDialog`, combinados num `Date`/ISO antes de enviar ao servidor
+- [x] `getFollowUpStatus` (`types/activity.ts`) passa a comparar instantes (`new Date(scheduledAt) < new Date()`) em vez de strings de data — corrige um caso que já seria tecnicamente errado antes (follow-up de hoje à noite não devia aparecer atrasado pela manhã)
+- [x] Novo helper `lib/dates.ts` (`startOfUtcDayIso`), mesmo padrão de `startOfCurrentMonthIso()` em `lib/plans.ts` — usado onde a comparação de "hoje" ainda precisa de fronteira de dia (cron, dashboard)
+- [x] Cron de lembrete (`app/api/cron/followup-reminders/route.ts`) ajustado pra range de timestamp em vez de igualdade de string de data, e o e-mail passa a mostrar o horário agendado
+- [x] Seção "Follow-ups" dentro do `DealFormDialog` (modal aberto ao clicar num card do Kanban) — lista via `ActivityTimeline` (mesmo componente da página de lead) + botão "Agendar follow-up", reaproveitando as Server Actions já existentes (`createFollowUp`/`completeFollowUp`/`cancelFollowUp`/`rescheduleFollowUp`); some quando o negócio ainda não tem lead vinculado
+- [x] Correção necessária em `KanbanBoard`: o modal de edição aberto agora se resincroniza com dados atualizados do servidor (`router.refresh()`), senão um follow-up criado ali dentro só apareceria depois de fechar e reabrir o modal
+- [x] Validado: `tsc`, lint e build limpos; suíte E2E sem regressão; verificação end-to-end via Playwright cobrindo agendar/ver/concluir follow-up de dentro do Pipeline, com horário exibido corretamente
+
+**Fora de escopo, por decisão explícita:** nenhum prompt automático pós-drag-and-drop oferecendo follow-up (o clique no card já resolve o fluxo descrito, sem inventar uma interação nova); sem mudança na cadência do e-mail de lembrete (continua 1x/dia); sem timezone picker (projeto segue assumindo fuso único implícito, mesmo precedente do M21).
+
+**Commit final:** `feat: follow-up no modal do Pipeline e horário no agendamento`
+
+---
+
+### M24. Billing por usuário e revisão de exportação (herdado do M21)
+
+**Objetivo:** Os dois itens do M21 original que dependiam de decisão externa (preço, jurídico) sem ETA — separados pra não bloquear o M21 indefinidamente.
+
 **Pendente:**
 - [ ] Revisar a política de exportação de dados (CSV/JSON) — hoje qualquer admin exporta tudo, em qualquer plano, a qualquer momento (`/api/workspaces/[workspaceId]/export`). Considerar restringir **exportação em massa** ao plano Pro, mantendo exclusão individual de dado disponível em todos os planos. Importante: isso não fere a LGPD em si — a lei protege o titular do dado (o lead), não garante exportação em massa gratuita e ilimitada pro tenant/workspace — mas é uma decisão com implicação legal real. **Precisa de validação com alguém que entenda de LGPD antes de travar essa regra definitivamente**, não é call só de produto/engenharia.
 - [ ] Migrar cobrança do Pro de valor fixo para cobrança por usuário: novo Price no Stripe com `billing_scheme: per_unit`, checkout mandando a quantidade real de membros (em vez de `quantity: 1` fixo hoje), e sincronização da quantidade da assinatura toda vez que um convite é aceito ou um membro é removido (Stripe cuida do rateio proporcional automaticamente via `stripe.subscriptions.update`)
 
-**Commit final:** um por item, conforme cada um é decidido e implementado (não é um commit único como M18-M20).
+**Commit final:** um por item, conforme cada um é decidido e implementado — mesmo espírito do M21.
 
 ---
 

@@ -21,7 +21,13 @@ const statusBadges: Partial<Record<FollowUpStatus, { label: string; className: s
 
 function displayDateLabel(activity: Activity) {
   if (activity.scheduledAt) {
-    return new Date(`${activity.scheduledAt}T00:00:00`).toLocaleDateString("pt-BR");
+    return new Date(activity.scheduledAt).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
   if (activity.occurredAt) {
     return new Date(activity.occurredAt).toLocaleString("pt-BR", {
@@ -85,15 +91,26 @@ export function ActivityTimeline({
               <p className="mt-1 text-sm text-muted-foreground">{activity.description}</p>
               {isActionable && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => onComplete(activity)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onComplete(activity)}
+                  >
                     <Check className="h-3.5 w-3.5" />
                     Concluir
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => onReschedule(activity)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onReschedule(activity)}
+                  >
                     <RotateCcw className="h-3.5 w-3.5" />
                     Reagendar
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
                     className="text-muted-foreground"

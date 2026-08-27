@@ -50,7 +50,12 @@ export function UpcomingFollowUps({
                   className={`flex shrink-0 items-center gap-1 text-xs ${followUp.overdue ? "text-destructive" : "text-muted-foreground"}`}
                 >
                   <CalendarClock className="h-3.5 w-3.5" />
-                  {new Date(`${followUp.scheduledAt}T00:00:00`).toLocaleDateString("pt-BR")}
+                  {new Date(followUp.scheduledAt).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                   {followUp.overdue && " · atrasado"}
                 </span>
               </li>

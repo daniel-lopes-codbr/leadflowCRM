@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { startOfUtcDayIso } from "@/lib/dates";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createResendClient, FROM_EMAIL } from "@/lib/resend/client";
 import { escapeHtml } from "@/lib/utils";
@@ -14,12 +15,12 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
 
   const { data: followUpRows, error } = await admin
     .from("activities")
-    .select("id, description, type, lead_id, leads(name, owner_id)")
-    .eq("scheduled_at", today)
+    .select("id, description, type, scheduled_at, lead_id, leads(name, owner_id)")
+    .gte("scheduled_at", startOfUtcDayIso())
+    .lt("scheduled_at", startOfUtcDayIso(1))
     .is("completed_at", null)
     .is("canceled_at", null);
 
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
   type FollowUpRow = {
     description: string;
     type: string;
+    scheduledAt: string;
     leadName: string;
     ownerId: string;
   };
@@ -39,7 +41,13 @@ export async function GET(request: Request) {
     const lead = Array.isArray(row.leads) ? row.leads[0] : row.leads;
     if (!lead?.owner_id) continue;
     const list = byOwner.get(lead.owner_id) ?? [];
-    list.push({ description: row.description, type: row.type, leadName: lead.name, ownerId: lead.owner_id });
+    list.push({
+      description: row.description,
+      type: row.type,
+      scheduledAt: row.scheduled_at,
+      leadName: lead.name,
+      ownerId: lead.owner_id,
+    });
     byOwner.set(lead.owner_id, list);
   }
 
@@ -60,10 +68,14 @@ export async function GET(request: Request) {
     if (!owner?.email) continue;
 
     const itemsHtml = items
-      .map(
-        (item) =>
-          `<li><strong>${escapeHtml(item.leadName)}</strong> — ${escapeHtml(item.type)}: ${escapeHtml(item.description)}</li>`
-      )
+      .map((item) => {
+        const time = new Date(item.scheduledAt).toLocaleTimeString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `<li><strong>${escapeHtml(item.leadName)}</strong> — ${time} · ${escapeHtml(item.type)}: ${escapeHtml(item.description)}</li>`;
+      })
       .join("");
 
     try {

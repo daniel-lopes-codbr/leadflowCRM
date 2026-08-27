@@ -28,16 +28,24 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FollowUpActionResult } from "@/app/(app)/[workspaceId]/leads/followup-actions";
 import { ACTIVITY_TYPES, type ActivityType } from "@/types/activity";
 
-const followUpSchema = z.object({
+const followUpFormSchema = z.object({
   type: z.enum(ACTIVITY_TYPES),
   description: z.string().min(3, "Descreva o que precisa ser feito."),
-  scheduledAt: z.string().min(1, "Informe a data."),
+  scheduledDate: z.string().min(1, "Informe a data."),
+  scheduledTime: z.string().min(1, "Informe o horário."),
 });
 
-export type FollowUpFormValues = z.infer<typeof followUpSchema>;
+type FollowUpFormFields = z.infer<typeof followUpFormSchema>;
+export type FollowUpFormValues = { type: ActivityType; description: string; scheduledAt: string };
+
+const DEFAULT_TIME = "09:00";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function combineDateTime(date: string, time: string): string {
+  return new Date(`${date}T${time}`).toISOString();
 }
 
 export function FollowUpFormDialog({
@@ -58,20 +66,34 @@ export function FollowUpFormDialog({
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FollowUpFormValues>({
-    resolver: zodResolver(followUpSchema),
-    defaultValues: { type: "Ligação", description: "", scheduledAt: todayIso() },
+  } = useForm<FollowUpFormFields>({
+    resolver: zodResolver(followUpFormSchema),
+    defaultValues: {
+      type: "Ligação",
+      description: "",
+      scheduledDate: todayIso(),
+      scheduledTime: DEFAULT_TIME,
+    },
   });
 
   useEffect(() => {
     if (!open) return;
     setServerError(null);
-    reset({ type: "Ligação", description: "", scheduledAt: todayIso() });
+    reset({
+      type: "Ligação",
+      description: "",
+      scheduledDate: todayIso(),
+      scheduledTime: DEFAULT_TIME,
+    });
   }, [open, reset]);
 
-  async function submit(values: FollowUpFormValues) {
+  async function submit(values: FollowUpFormFields) {
     setServerError(null);
-    const result = await onSubmit(values);
+    const result = await onSubmit({
+      type: values.type,
+      description: values.description,
+      scheduledAt: combineDateTime(values.scheduledDate, values.scheduledTime),
+    });
     if (result.status === "error") {
       setServerError(result.message);
       return;
@@ -98,33 +120,43 @@ export function FollowUpFormDialog({
             </Alert>
           )}
 
+          <div className="space-y-1.5">
+            <Label>Tipo</Label>
+            <Select
+              value={watch("type")}
+              onValueChange={(value) => setValue("type", value as ActivityType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ACTIVITY_TYPES.filter((type) => type !== "Responsável").map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Tipo</Label>
-              <Select
-                value={watch("type")}
-                onValueChange={(value) => setValue("type", value as ActivityType)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTIVITY_TYPES.filter((type) => type !== "Responsável").map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="scheduledDate">Data agendada</Label>
+              <Input
+                id="scheduledDate"
+                type="date"
+                aria-invalid={!!errors.scheduledDate}
+                {...register("scheduledDate")}
+              />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="scheduledAt">Data agendada</Label>
+              <Label htmlFor="scheduledTime">Horário</Label>
               <Input
-                id="scheduledAt"
-                type="date"
-                aria-invalid={!!errors.scheduledAt}
-                {...register("scheduledAt")}
+                id="scheduledTime"
+                type="time"
+                aria-invalid={!!errors.scheduledTime}
+                {...register("scheduledTime")}
               />
             </div>
           </div>

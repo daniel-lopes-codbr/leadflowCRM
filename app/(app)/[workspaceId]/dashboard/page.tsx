@@ -3,6 +3,7 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesFunnelChart } from "@/components/dashboard/sales-funnel-chart";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { UpcomingFollowUps } from "@/components/dashboard/upcoming-followups";
+import { startOfUtcDayIso } from "@/lib/dates";
 import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
@@ -15,7 +16,8 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
   const params = await props.params;
   const supabase = createClient();
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const now = new Date().toISOString();
+  const endOfTodayIso = startOfUtcDayIso(1);
 
   const [
     {
@@ -41,12 +43,12 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
       .not("scheduled_at", "is", null)
       .is("completed_at", null)
       .is("canceled_at", null)
-      .lte("scheduled_at", todayIso)
+      .lt("scheduled_at", endOfTodayIso)
       .order("scheduled_at", { ascending: true }),
   ]);
 
   const overdueLeadIds = new Set(
-    (followUpRows ?? []).filter((row) => row.scheduled_at! < todayIso).map((row) => row.lead_id)
+    (followUpRows ?? []).filter((row) => row.scheduled_at! < now).map((row) => row.lead_id)
   );
 
   const deals: Deal[] = (dealRows ?? []).map((row) => {
@@ -81,7 +83,7 @@ export default async function DashboardPage(props: { params: Promise<{ workspace
         description: row.description,
         type: row.type,
         scheduledAt: row.scheduled_at!,
-        overdue: row.scheduled_at! < todayIso,
+        overdue: row.scheduled_at! < now,
         ownerId: lead?.owner_id ?? null,
       };
     })
