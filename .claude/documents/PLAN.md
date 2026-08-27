@@ -391,6 +391,8 @@ Os dois itens que dependiam de decisão de negócio/jurídico (sem ETA) foram mo
 
 **Commit final:** `feat: follow-up no modal do Pipeline e horário no agendamento`
 
+**Correção pós-lançamento (2026-08-27):** com dados reais, a seção de follow-ups no modal do Pipeline estourava a altura conforme os follow-ups se acumulavam num negócio (visto num print do usuário). Em vez de resolver com opinião própria (o usuário citou paginação como palpite dele mesmo, mas pediu explicitamente pra pesquisar como o mercado resolve isso antes), pesquisei HubSpot, Salesforce, Pipedrive e Agendor: os 4, de forma independente, separam pendente/acionável (compacto, sempre visível) de histórico/concluído (aba ou seção separada, escondida por padrão) — nenhum usa paginação numerada. `components/leads/activity-timeline.tsx` (compartilhado entre a página do lead e o modal do Pipeline) ganhou abas "Pendentes"/"Histórico" via `Tabs` do shadcn/ui (já era dependência do projeto) com contador em cada aba, e cada lista tem altura máxima com scroll interno — resolve o estouro independentemente de quantos follow-ups existam. Nenhuma Server Action ou tipo mudou, refactor isolado de apresentação. Validado via Playwright (6 pendentes forçando scroll + 2 no histórico, contadores corretos, botões de ação só aparecem em pendentes) e suíte E2E completa sem regressão.
+
 ---
 
 ### M24. Billing por usuário e revisão de exportação (herdado do M21)
