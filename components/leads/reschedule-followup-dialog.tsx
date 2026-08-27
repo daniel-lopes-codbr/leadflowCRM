@@ -16,6 +16,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { FollowUpActionResult } from "@/app/(app)/[workspaceId]/leads/followup-actions";
 
+function splitDateTime(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 export function RescheduleFollowUpDialog({
   open,
   onOpenChange,
@@ -27,13 +36,16 @@ export function RescheduleFollowUpDialog({
   currentScheduledAt: string;
   onSubmit: (newScheduledAt: string) => Promise<FollowUpActionResult>;
 }) {
-  const [newDate, setNewDate] = useState(currentScheduledAt);
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setNewDate(currentScheduledAt);
+      const { date, time } = splitDateTime(currentScheduledAt);
+      setNewDate(date);
+      setNewTime(time);
       setServerError(null);
     }
   }, [open, currentScheduledAt]);
@@ -41,7 +53,7 @@ export function RescheduleFollowUpDialog({
   async function handleSubmit() {
     setSubmitting(true);
     setServerError(null);
-    const result = await onSubmit(newDate);
+    const result = await onSubmit(new Date(`${newDate}T${newTime}`).toISOString());
     setSubmitting(false);
     if (result.status === "error") {
       setServerError(result.message);
@@ -68,21 +80,36 @@ export function RescheduleFollowUpDialog({
           </Alert>
         )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="reschedule-date">Nova data</Label>
-          <Input
-            id="reschedule-date"
-            type="date"
-            value={newDate}
-            onChange={(event) => setNewDate(event.target.value)}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="reschedule-date">Nova data</Label>
+            <Input
+              id="reschedule-date"
+              type="date"
+              value={newDate}
+              onChange={(event) => setNewDate(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reschedule-time">Novo horário</Label>
+            <Input
+              id="reschedule-time"
+              type="time"
+              value={newTime}
+              onChange={(event) => setNewTime(event.target.value)}
+            />
+          </div>
         </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting || !newDate}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || !newDate || !newTime}
+          >
             Reagendar
           </Button>
         </DialogFooter>

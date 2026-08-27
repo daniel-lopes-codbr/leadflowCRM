@@ -47,6 +47,18 @@ export function KanbanBoard({
     setDeals(initialDeals);
   }, [initialDeals]);
 
+  // Mantém o modal de edição aberto sincronizado com dados atualizados do
+  // servidor (ex.: follow-up criado/concluído dentro do próprio modal) —
+  // sem isso, `editingDeal` fica congelado no snapshot de quando o modal
+  // foi aberto, e o `router.refresh()` disparado pelas ações de follow-up
+  // não teria efeito visível até fechar e reabrir o modal.
+  useEffect(() => {
+    if (!editingDeal) return;
+    const fresh = deals.find((d) => d.id === editingDeal.id);
+    if (fresh && fresh !== editingDeal) setEditingDeal(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deals]);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const dealsByStatus = LEAD_STATUSES.reduce(
@@ -141,6 +153,7 @@ export function KanbanBoard({
       <DealFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        workspaceId={workspaceId}
         deal={editingDeal}
         defaultStatus={defaultStatus}
         leads={leads}

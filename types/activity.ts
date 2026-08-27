@@ -24,6 +24,5 @@ export function getFollowUpStatus(activity: Activity): FollowUpStatus {
   if (activity.completedAt) return "completed";
   if (activity.canceledAt) return "canceled";
 
-  const today = new Date().toISOString().slice(0, 10);
-  return activity.scheduledAt < today ? "overdue" : "pending";
+  return new Date(activity.scheduledAt) < new Date() ? "overdue" : "pending";
 }
