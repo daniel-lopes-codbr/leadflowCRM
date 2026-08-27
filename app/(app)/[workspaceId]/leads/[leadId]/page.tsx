@@ -3,6 +3,7 @@ import { LeadDetail } from "@/components/leads/lead-detail";
 import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
 import type { Activity, ActivityType } from "@/types/activity";
+import type { Attachment } from "@/types/attachment";
 import type { Lead, LeadStatus } from "@/types/lead";
 
 export default async function LeadDetailPage(
@@ -61,5 +62,31 @@ export default async function LeadDetailPage(
     };
   });
 
-  return <LeadDetail workspaceId={params.workspaceId} lead={lead} activities={activities} />;
+  const { data: attachmentRows } = await supabase
+    .from("attachments")
+    .select("id, lead_id, name, content_type, size_bytes, created_at, profiles(name)")
+    .eq("lead_id", params.leadId)
+    .order("created_at", { ascending: false });
+
+  const attachments: Attachment[] = (attachmentRows ?? []).map((row) => {
+    const author = toOneRelation(row.profiles as { name: string } | { name: string }[] | null);
+    return {
+      id: row.id,
+      leadId: row.lead_id,
+      name: row.name,
+      contentType: row.content_type,
+      sizeBytes: row.size_bytes,
+      authorName: author?.name ?? "Usuário removido",
+      createdAt: row.created_at,
+    };
+  });
+
+  return (
+    <LeadDetail
+      workspaceId={params.workspaceId}
+      lead={lead}
+      activities={activities}
+      attachments={attachments}
+    />
+  );
 }
