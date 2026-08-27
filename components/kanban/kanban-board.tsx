@@ -14,7 +14,7 @@ import {
 import { AlertTriangle, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { createDeal, updateDeal, updateDealStatus } from "@/app/(app)/[workspaceId]/pipeline/actions";
+import { createDeal, updateDealStatus } from "@/app/(app)/[workspaceId]/pipeline/actions";
 import { DealCardBody } from "@/components/kanban/deal-card";
 import { DealFormDialog, type DealFormValues } from "@/components/kanban/deal-form-dialog";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
@@ -38,26 +38,13 @@ export function KanbanBoard({
   const router = useRouter();
   const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [defaultStatus, setDefaultStatus] = useState<LeadStatus | undefined>(undefined);
   const [dragError, setDragError] = useState<string | null>(null);
 
   useEffect(() => {
     setDeals(initialDeals);
   }, [initialDeals]);
-
-  // Mantém o modal de edição aberto sincronizado com dados atualizados do
-  // servidor (ex.: follow-up criado/concluído dentro do próprio modal) —
-  // sem isso, `editingDeal` fica congelado no snapshot de quando o modal
-  // foi aberto, e o `router.refresh()` disparado pelas ações de follow-up
-  // não teria efeito visível até fechar e reabrir o modal.
-  useEffect(() => {
-    if (!editingDeal) return;
-    const fresh = deals.find((d) => d.id === editingDeal.id);
-    if (fresh && fresh !== editingDeal) setEditingDeal(fresh);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deals]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -96,22 +83,16 @@ export function KanbanBoard({
   }
 
   function openCreateDialog(status?: LeadStatus) {
-    setEditingDeal(null);
     setDefaultStatus(status);
-    setDialogOpen(true);
+    setCreateDialogOpen(true);
   }
 
-  function openEditDialog(deal: Deal) {
-    setEditingDeal(deal);
-    setDefaultStatus(undefined);
-    setDialogOpen(true);
+  function openDealPage(deal: Deal) {
+    router.push(`/${workspaceId}/pipeline/${deal.id}`);
   }
 
-  async function handleSubmit(values: DealFormValues) {
-    const result = editingDeal
-      ? await updateDeal(workspaceId, editingDeal.id, values)
-      : await createDeal(workspaceId, values);
-
+  async function handleCreateSubmit(values: DealFormValues) {
+    const result = await createDeal(workspaceId, values);
     if (result.status === "success") {
       router.refresh();
     }
@@ -141,7 +122,7 @@ export function KanbanBoard({
               key={status}
               status={status}
               deals={dealsByStatus[status]}
-              onDealClick={openEditDialog}
+              onDealClick={openDealPage}
               onAddClick={openCreateDialog}
             />
           ))}
@@ -151,14 +132,13 @@ export function KanbanBoard({
       </DndContext>
 
       <DealFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        workspaceId={workspaceId}
-        deal={editingDeal}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        deal={null}
         defaultStatus={defaultStatus}
         leads={leads}
         members={members}
-        onSubmit={handleSubmit}
+        onSubmit={handleCreateSubmit}
       />
     </div>
   );

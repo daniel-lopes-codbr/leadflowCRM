@@ -26,7 +26,7 @@ export function UpcomingDeadlines({ deals, workspaceId }: { deals: Deal[]; works
                 >
                   <div className="min-w-0">
                     <Link
-                      href={`/${workspaceId}/pipeline`}
+                      href={`/${workspaceId}/pipeline/${deal.id}`}
                       className="truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
                     >
                       {deal.title}

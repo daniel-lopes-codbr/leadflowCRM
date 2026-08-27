@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { AlertTriangle, CalendarPlus } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -26,19 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DealActionResult } from "@/app/(app)/[workspaceId]/pipeline/actions";
-import {
-  cancelFollowUp,
-  completeFollowUp,
-  createFollowUp,
-  rescheduleFollowUp,
-} from "@/app/(app)/[workspaceId]/leads/followup-actions";
-import { ActivityTimeline } from "@/components/leads/activity-timeline";
-import {
-  FollowUpFormDialog,
-  type FollowUpFormValues,
-} from "@/components/leads/followup-form-dialog";
-import { RescheduleFollowUpDialog } from "@/components/leads/reschedule-followup-dialog";
-import type { Activity } from "@/types/activity";
 import { LEAD_STATUSES, type LeadStatus } from "@/types/lead";
 import type { Deal } from "@/types/deal";
 
@@ -59,7 +45,6 @@ type Member = { id: string; name: string };
 export function DealFormDialog({
   open,
   onOpenChange,
-  workspaceId,
   deal,
   defaultStatus,
   leads,
@@ -68,17 +53,13 @@ export function DealFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspaceId: string;
   deal?: Deal | null;
   defaultStatus?: LeadStatus;
   leads: LeadOption[];
   members: Member[];
   onSubmit: (values: DealFormValues) => Promise<DealActionResult>;
 }) {
-  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
-  const [rescheduleTarget, setRescheduleTarget] = useState<Activity | null>(null);
   const defaultLeadId = leads[0]?.id ?? "";
   const defaultOwnerId = members[0]?.id ?? "";
 
@@ -136,47 +117,9 @@ export function DealFormDialog({
     onOpenChange(false);
   }
 
-  async function handleFollowUpSubmit(values: FollowUpFormValues) {
-    const result = await createFollowUp(workspaceId, deal!.leadId, values);
-    if (result.status === "success") {
-      router.refresh();
-    }
-    return result;
-  }
-
-  async function handleFollowUpComplete(activity: Activity) {
-    const result = await completeFollowUp(workspaceId, deal!.leadId, activity.id);
-    if (result.status === "success") {
-      router.refresh();
-    }
-  }
-
-  async function handleFollowUpCancel(activity: Activity) {
-    const result = await cancelFollowUp(workspaceId, deal!.leadId, activity.id);
-    if (result.status === "success") {
-      router.refresh();
-    }
-  }
-
-  async function handleFollowUpReschedule(newScheduledAt: string) {
-    if (!rescheduleTarget || !deal) {
-      return { status: "error" as const, message: "Follow-up não encontrado." };
-    }
-    const result = await rescheduleFollowUp(
-      workspaceId,
-      deal.leadId,
-      rescheduleTarget.id,
-      newScheduledAt
-    );
-    if (result.status === "success") {
-      router.refresh();
-    }
-    return result;
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{deal ? "Editar negócio" : "Novo negócio"}</DialogTitle>
           <DialogDescription>
@@ -283,37 +226,6 @@ export function DealFormDialog({
             </div>
           </div>
 
-          {deal && (
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-foreground">Follow-ups</h3>
-                {deal.leadId && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setFollowUpDialogOpen(true)}
-                  >
-                    <CalendarPlus className="h-3.5 w-3.5" />
-                    Agendar follow-up
-                  </Button>
-                )}
-              </div>
-              {deal.leadId ? (
-                <ActivityTimeline
-                  activities={deal.followUps ?? []}
-                  onComplete={handleFollowUpComplete}
-                  onCancel={handleFollowUpCancel}
-                  onReschedule={setRescheduleTarget}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Vincule um lead pra agendar follow-ups.
-                </p>
-              )}
-            </div>
-          )}
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
@@ -324,25 +236,6 @@ export function DealFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-
-      {deal && deal.leadId && (
-        <>
-          <FollowUpFormDialog
-            open={followUpDialogOpen}
-            onOpenChange={setFollowUpDialogOpen}
-            onSubmit={handleFollowUpSubmit}
-          />
-
-          {rescheduleTarget && (
-            <RescheduleFollowUpDialog
-              open={!!rescheduleTarget}
-              onOpenChange={(nextOpen) => !nextOpen && setRescheduleTarget(null)}
-              currentScheduledAt={rescheduleTarget.scheduledAt ?? ""}
-              onSubmit={handleFollowUpReschedule}
-            />
-          )}
-        </>
-      )}
     </Dialog>
   );
 }
