@@ -62,6 +62,6 @@ O PRD não define paleta — esta é a direção adotada como ponto de partida (
 
 - **RBAC:** três perfis — Admin (dono, gerencia plano/Stripe, workspace, membros), Membro (operação: leads, Kanban, atividades, escopado ao workspace), Admin Solo (múltiplos workspaces isolados, um por cliente).
 - **Pipeline Kanban:** 6 colunas fixas nesta ordem — Novo Lead, Contato Realizado, Proposta Enviada, Negociação, Fechado Ganho, Fechado Perdido. Mudança de coluna via drag-and-drop persiste imediatamente no banco.
-- **Planos (Stripe):** Free trava em 1 colaboradores / 25 leads (hard limit); Pro é ilimitado (R$ 49/mês). Limite deve ser enforced no backend, não só escondido na UI.
+- **Planos (Stripe):** Free trava em 1 colaborador / 25 **novos leads por mês** (não é total acumulado — reseta a cada mês calendário, ver M21 no PLAN.md); Pro é ilimitado (R$ 49/mês, cobrança por usuário planejada, ver M21). Limite deve ser enforced no backend, não só escondido na UI.
 - **LGPD (restrição permanente de design):** exclusão total de dados de leads/workspace, exportação de dados em CSV/JSON, opt-out automático em e-mails do Resend.
 - **Logs:** separar infraestrutura (erros 500, crashes — Vercel Logs) de auditoria de negócio (tabela `audit_logs` no Postgres, só para eventos críticos: criação/exclusão de workspace, upgrade/downgrade de plano, convites aceitos/removidos, exportação de dados).

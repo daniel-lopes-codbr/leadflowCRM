@@ -16,7 +16,12 @@ const plans = [
     id: "free" as const,
     name: "Free",
     price: "R$ 0",
-    features: ["1 colaborador", "Até 25 leads", "Pipeline Kanban completo", "Dashboard básico"],
+    features: [
+      "1 colaborador",
+      "Até 25 novos leads por mês",
+      "Pipeline Kanban completo",
+      "Dashboard básico",
+    ],
   },
   {
     id: "pro" as const,
@@ -112,12 +117,15 @@ export function PlansPanel({
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Leads</span>
+                <span className="text-muted-foreground">Novos leads este mês</span>
                 <span className="font-medium text-foreground">
-                  {leadsUsed} / {limits.leads}
+                  {leadsUsed} / {limits.leadsPerMonth}
                 </span>
               </div>
-              <Progress value={Math.min((leadsUsed / limits.leads) * 100, 100)} />
+              <Progress
+                value={Math.min((leadsUsed / limits.leadsPerMonth) * 100, 100)}
+                className={leadsUsed >= limits.leadsPerMonth ? "[&>div]:bg-destructive" : ""}
+              />
             </div>
           </CardContent>
         </Card>

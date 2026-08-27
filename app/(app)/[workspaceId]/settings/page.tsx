@@ -1,7 +1,7 @@
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 import { toOneRelation } from "@/lib/supabase/relations";
 import { createClient } from "@/lib/supabase/server";
-import type { WorkspacePlan } from "@/lib/plans";
+import { startOfCurrentMonthIso, type WorkspacePlan } from "@/lib/plans";
 
 export default async function SettingsPage(props: { params: Promise<{ workspaceId: string }> }) {
   const params = await props.params;
@@ -30,7 +30,8 @@ export default async function SettingsPage(props: { params: Promise<{ workspaceI
       supabase
         .from("leads")
         .select("id", { count: "exact", head: true })
-        .eq("workspace_id", params.workspaceId),
+        .eq("workspace_id", params.workspaceId)
+        .gte("created_at", startOfCurrentMonthIso()),
     ]);
 
   const members = (membershipRows ?? []).map((row) => {
