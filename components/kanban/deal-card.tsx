@@ -38,7 +38,7 @@ export function DealCardBody({ deal, dragging = false }: { deal: Deal; dragging?
       {deal.hasOverdueFollowUp && (
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-destructive">
           <AlarmClockOff className="h-3.5 w-3.5" />
-          Follow-up atrasado
+          Tarefa atrasada
         </div>
       )}
 

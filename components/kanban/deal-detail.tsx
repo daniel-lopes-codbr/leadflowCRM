@@ -31,7 +31,7 @@ import { RescheduleFollowUpDialog } from "@/components/leads/reschedule-followup
 import { StatusBadge } from "@/components/leads/status-badge";
 import { buildWhatsappLink } from "@/lib/whatsapp";
 import { formatCurrency } from "@/lib/utils";
-import type { Activity } from "@/types/activity";
+import type { Activity, ActivityType } from "@/types/activity";
 import type { Deal } from "@/types/deal";
 
 type LeadOption = { id: string; name: string; company: string };
@@ -84,16 +84,15 @@ export function DealDetail({
     }
   }
 
-  async function handleReschedule(newScheduledAt: string) {
+  async function handleReschedule(values: {
+    type: ActivityType;
+    description: string;
+    scheduledAt: string;
+  }) {
     if (!rescheduleTarget) {
-      return { status: "error" as const, message: "Follow-up não encontrado." };
+      return { status: "error" as const, message: "Tarefa não encontrada." };
     }
-    const result = await rescheduleFollowUp(
-      workspaceId,
-      deal.leadId,
-      rescheduleTarget.id,
-      newScheduledAt
-    );
+    const result = await rescheduleFollowUp(workspaceId, deal.leadId, rescheduleTarget.id, values);
     if (result.status === "success") {
       router.refresh();
     }
@@ -112,7 +111,7 @@ export function DealDetail({
         </Link>
         <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="h-4 w-4" />
-          Editar
+          Editar negócio
         </Button>
       </div>
 
@@ -169,11 +168,11 @@ export function DealDetail({
 
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-foreground">Follow-ups</h2>
+            <h2 className="text-lg font-semibold text-foreground">Tarefas</h2>
             {deal.leadId && (
               <Button size="sm" variant="outline" onClick={() => setFollowUpDialogOpen(true)}>
                 <CalendarPlus className="h-4 w-4" />
-                Agendar follow-up
+                Agendar tarefa
               </Button>
             )}
           </div>
@@ -186,7 +185,7 @@ export function DealDetail({
             />
           ) : (
             <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              Vincule um lead pra agendar follow-ups.
+              Vincule um lead pra agendar tarefas.
             </p>
           )}
         </div>
@@ -213,7 +212,7 @@ export function DealDetail({
             <RescheduleFollowUpDialog
               open={!!rescheduleTarget}
               onOpenChange={(open) => !open && setRescheduleTarget(null)}
-              currentScheduledAt={rescheduleTarget.scheduledAt ?? ""}
+              activity={rescheduleTarget}
               onSubmit={handleReschedule}
             />
           )}

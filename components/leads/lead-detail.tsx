@@ -34,6 +34,7 @@ import {
   createFollowUp,
   rescheduleFollowUp,
 } from "@/app/(app)/[workspaceId]/leads/followup-actions";
+import { createDeal } from "@/app/(app)/[workspaceId]/pipeline/actions";
 import {
   ActivityFormDialog,
   type ActivityFormValues,
@@ -46,8 +47,9 @@ import {
 } from "@/components/leads/followup-form-dialog";
 import { RescheduleFollowUpDialog } from "@/components/leads/reschedule-followup-dialog";
 import { StatusBadge } from "@/components/leads/status-badge";
+import { DealFormDialog, type DealFormValues } from "@/components/kanban/deal-form-dialog";
 import { buildWhatsappLink } from "@/lib/whatsapp";
-import type { Activity } from "@/types/activity";
+import type { Activity, ActivityType } from "@/types/activity";
 import type { Attachment } from "@/types/attachment";
 import type { Lead } from "@/types/lead";
 
@@ -56,16 +58,19 @@ export function LeadDetail({
   lead,
   activities,
   attachments,
+  members,
 }: {
   workspaceId: string;
   lead: Lead;
   activities: Activity[];
   attachments: Attachment[];
+  members: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const whatsappHref = buildWhatsappLink(lead.phone);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
+  const [dealDialogOpen, setDealDialogOpen] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState<Activity | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -100,18 +105,25 @@ export function LeadDetail({
     }
   }
 
-  async function handleReschedule(newScheduledAt: string) {
+  async function handleReschedule(values: {
+    type: ActivityType;
+    description: string;
+    scheduledAt: string;
+  }) {
     if (!rescheduleTarget) {
-      return { status: "error" as const, message: "Follow-up não encontrado." };
+      return { status: "error" as const, message: "Tarefa não encontrada." };
     }
-    const result = await rescheduleFollowUp(
-      workspaceId,
-      lead.id,
-      rescheduleTarget.id,
-      newScheduledAt
-    );
+    const result = await rescheduleFollowUp(workspaceId, lead.id, rescheduleTarget.id, values);
     if (result.status === "success") {
       router.refresh();
+    }
+    return result;
+  }
+
+  async function handleCreateDeal(values: DealFormValues) {
+    const result = await createDeal(workspaceId, values);
+    if (result.status === "success" && result.dealId) {
+      router.push(`/${workspaceId}/pipeline/${result.dealId}`);
     }
     return result;
   }
@@ -135,15 +147,21 @@ export function LeadDetail({
           <ArrowLeft className="h-4 w-4" />
           Voltar para leads
         </Link>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive"
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 className="h-4 w-4" />
-          Excluir lead
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDealDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Criar negócio
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Excluir lead
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
@@ -201,7 +219,7 @@ export function LeadDetail({
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setFollowUpDialogOpen(true)}>
                 <CalendarPlus className="h-4 w-4" />
-                Agendar follow-up
+                Agendar tarefa
               </Button>
               <Button size="sm" onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
@@ -234,10 +252,19 @@ export function LeadDetail({
         <RescheduleFollowUpDialog
           open={!!rescheduleTarget}
           onOpenChange={(open) => !open && setRescheduleTarget(null)}
-          currentScheduledAt={rescheduleTarget.scheduledAt ?? ""}
+          activity={rescheduleTarget}
           onSubmit={handleReschedule}
         />
       )}
+
+      <DealFormDialog
+        open={dealDialogOpen}
+        onOpenChange={setDealDialogOpen}
+        deal={null}
+        leads={[{ id: lead.id, name: lead.name, company: lead.company }]}
+        members={members}
+        onSubmit={handleCreateDeal}
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

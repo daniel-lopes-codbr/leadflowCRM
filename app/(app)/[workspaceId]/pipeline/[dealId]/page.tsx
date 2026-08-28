@@ -51,7 +51,6 @@ export default async function DealDetailPage(
         "id, lead_id, type, description, occurred_at, scheduled_at, completed_at, canceled_at, profiles(name)"
       )
       .eq("lead_id", dealRow.lead_id)
-      .not("scheduled_at", "is", null)
       .order("created_at", { ascending: false });
 
     followUps = (activityRows ?? []).map((row) => {

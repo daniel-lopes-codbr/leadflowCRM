@@ -6,7 +6,9 @@ import { logOwnerChangeActivity } from "@/lib/activities";
 import { createClient } from "@/lib/supabase/server";
 import { LEAD_STATUSES } from "@/types/lead";
 
-export type DealActionResult = { status: "success" } | { status: "error"; message: string };
+export type DealActionResult =
+  | { status: "success"; dealId?: string }
+  | { status: "error"; message: string };
 
 const dealInputSchema = z.object({
   title: z.string().trim().min(2, "Dê um título ao negócio."),
@@ -40,22 +42,26 @@ export async function createDeal(workspaceId: string, input: unknown): Promise<D
     return { status: "error", message: firstIssueMessage(parsed.error) };
   }
 
-  const { error } = await supabase.from("deals").insert({
-    workspace_id: workspaceId,
-    lead_id: parsed.data.leadId,
-    title: parsed.data.title,
-    value: parsed.data.value,
-    status: parsed.data.status,
-    owner_id: parsed.data.ownerId,
-    deadline: parsed.data.deadline,
-  });
+  const { data, error } = await supabase
+    .from("deals")
+    .insert({
+      workspace_id: workspaceId,
+      lead_id: parsed.data.leadId,
+      title: parsed.data.title,
+      value: parsed.data.value,
+      status: parsed.data.status,
+      owner_id: parsed.data.ownerId,
+      deadline: parsed.data.deadline,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { status: "error", message: "Não foi possível criar o negócio." };
   }
 
   revalidatePath(`/${workspaceId}/pipeline`);
-  return { status: "success" };
+  return { status: "success", dealId: data.id };
 }
 
 export async function updateDeal(
