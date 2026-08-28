@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Mail, MessageSquare, Phone, RotateCcw, UserCog, Users, X } from "lucide-react";
+import { Check, Mail, MessageSquare, Pencil, Phone, UserCog, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFollowUpStatus, type Activity, type ActivityType, type FollowUpStatus } from "@/types/activity";
@@ -84,8 +84,8 @@ function ActivityItem({
               Concluir
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => onReschedule(activity)}>
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reagendar
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
             </Button>
             <Button
               type="button"
@@ -164,7 +164,7 @@ export function ActivityTimeline({
 
       <TabsContent value="pending">
         {pending.length === 0 ? (
-          <EmptyState message="Nenhum follow-up pendente." />
+          <EmptyState message="Nenhuma tarefa pendente." />
         ) : (
           <ol className="max-h-72 space-y-6 overflow-y-auto pr-1">
             {pending.map((activity) => (

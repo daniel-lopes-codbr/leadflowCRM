@@ -105,7 +105,7 @@ export function FollowUpFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Agendar follow-up</DialogTitle>
+          <DialogTitle>Agendar tarefa</DialogTitle>
           <DialogDescription>
             Programe a próxima ação com este lead — você recebe um lembrete por e-mail no dia
             agendado.

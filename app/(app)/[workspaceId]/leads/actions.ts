@@ -23,7 +23,6 @@ const leadInputSchema = z.object({
 const activityInputSchema = z.object({
   type: z.enum(ACTIVITY_TYPES),
   description: z.string().trim().min(3, "Descreva a interação."),
-  occurredAt: z.string().min(1, "Informe a data."),
 });
 
 function firstIssueMessage(error: z.ZodError): string {
@@ -196,18 +195,13 @@ export async function createActivity(
     return { status: "error", message: firstIssueMessage(parsed.error) };
   }
 
-  const occurredAt = new Date(parsed.data.occurredAt);
-  if (Number.isNaN(occurredAt.getTime())) {
-    return { status: "error", message: "Informe uma data válida." };
-  }
-
   const { error } = await supabase.from("activities").insert({
     workspace_id: workspaceId,
     lead_id: leadId,
     type: parsed.data.type,
     description: parsed.data.description,
     author_id: user.id,
-    occurred_at: occurredAt.toISOString(),
+    occurred_at: new Date().toISOString(),
   });
 
   if (error) {
@@ -215,5 +209,6 @@ export async function createActivity(
   }
 
   revalidatePath(`/${workspaceId}/leads/${leadId}`);
+  revalidatePath(`/${workspaceId}/pipeline/[dealId]`, "page");
   return { status: "success" };
 }

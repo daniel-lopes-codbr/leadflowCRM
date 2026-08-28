@@ -28,6 +28,11 @@ function revalidateLead(workspaceId: string, leadId: string) {
   revalidatePath(`/${workspaceId}/leads/${leadId}`);
   revalidatePath(`/${workspaceId}/dashboard`);
   revalidatePath(`/${workspaceId}/pipeline`);
+  // Revalida qualquer página de negócio que esteja mostrando as tarefas
+  // deste lead — não dá pra saber qual dealId específico a partir daqui
+  // (um lead pode ter vários negócios), então revalida o padrão de rota
+  // dinâmica inteiro, como o próprio Next.js recomenda pra esse caso.
+  revalidatePath(`/${workspaceId}/pipeline/[dealId]`, "page");
 }
 
 export async function createFollowUp(
@@ -56,7 +61,7 @@ export async function createFollowUp(
   });
 
   if (error) {
-    return { status: "error", message: "Não foi possível agendar o follow-up." };
+    return { status: "error", message: "Não foi possível agendar a tarefa." };
   }
 
   revalidateLead(workspaceId, leadId);
@@ -86,7 +91,7 @@ export async function completeFollowUp(
     .is("canceled_at", null);
 
   if (error) {
-    return { status: "error", message: "Não foi possível concluir o follow-up." };
+    return { status: "error", message: "Não foi possível concluir a tarefa." };
   }
 
   revalidateLead(workspaceId, leadId);
@@ -113,20 +118,22 @@ export async function cancelFollowUp(
     .is("canceled_at", null);
 
   if (error) {
-    return { status: "error", message: "Não foi possível cancelar o follow-up." };
+    return { status: "error", message: "Não foi possível cancelar a tarefa." };
   }
 
   revalidateLead(workspaceId, leadId);
   return { status: "success" };
 }
 
-// Reagendar não sobrescreve a data do follow-up original — cancela o antigo
-// e cria um novo, preservando o rastro de que ele foi remarcado.
+// Editar não sobrescreve a linha original — cancela a antiga e cria uma
+// nova (tipo/descrição/data/hora, todos editáveis agora), preservando o
+// rastro de que ela foi alterada. Mesmo mecanismo de sempre, só que agora
+// tipo e descrição também podem ser corrigidos, não só a data.
 export async function rescheduleFollowUp(
   workspaceId: string,
   leadId: string,
   activityId: string,
-  newScheduledAt: string
+  input: unknown
 ): Promise<FollowUpActionResult> {
   const supabase = createClient();
   const user = await requireUser(supabase);
@@ -134,19 +141,20 @@ export async function rescheduleFollowUp(
     return { status: "error", message: "Sessão expirada. Faça login novamente." };
   }
 
-  if (!newScheduledAt) {
-    return { status: "error", message: "Informe a nova data." };
+  const parsed = followUpInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: firstIssueMessage(parsed.error) };
   }
 
   const { data: original } = await supabase
     .from("activities")
-    .select("type, description, lead_id")
+    .select("lead_id")
     .eq("id", activityId)
     .eq("workspace_id", workspaceId)
     .maybeSingle();
 
   if (!original) {
-    return { status: "error", message: "Follow-up não encontrado." };
+    return { status: "error", message: "Tarefa não encontrada." };
   }
 
   const { error: cancelError } = await supabase
@@ -158,22 +166,22 @@ export async function rescheduleFollowUp(
     .is("canceled_at", null);
 
   if (cancelError) {
-    return { status: "error", message: "Não foi possível reagendar o follow-up." };
+    return { status: "error", message: "Não foi possível editar a tarefa." };
   }
 
   const { error: insertError } = await supabase.from("activities").insert({
     workspace_id: workspaceId,
     lead_id: original.lead_id,
-    type: original.type,
-    description: original.description,
+    type: parsed.data.type,
+    description: parsed.data.description,
     author_id: user.id,
-    scheduled_at: newScheduledAt,
+    scheduled_at: parsed.data.scheduledAt,
   });
 
   if (insertError) {
     return {
       status: "error",
-      message: "Follow-up cancelado, mas não foi possível criar o novo agendamento.",
+      message: "Tarefa cancelada, mas não foi possível criar a nova versão.",
     };
   }
 

@@ -23,11 +23,11 @@ export function UpcomingFollowUps({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Follow-ups de hoje e atrasados</CardTitle>
+        <CardTitle className="text-base">Tarefas de hoje e atrasadas</CardTitle>
       </CardHeader>
       <CardContent>
         {followUps.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum follow-up pendente pra você.</p>
+          <p className="text-sm text-muted-foreground">Nenhuma tarefa pendente pra você.</p>
         ) : (
           <ul className="divide-y divide-border">
             {followUps.map((followUp) => (

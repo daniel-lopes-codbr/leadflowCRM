@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     .is("canceled_at", null);
 
   if (error) {
-    return NextResponse.json({ error: "Erro ao buscar follow-ups." }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar tarefas." }, { status: 500 });
   }
 
   type FollowUpRow = {
@@ -82,8 +82,8 @@ export async function GET(request: Request) {
       await resend.emails.send({
         from: FROM_EMAIL,
         to: owner.email,
-        subject: `Você tem ${items.length} follow-up${items.length > 1 ? "s" : ""} para hoje`,
-        html: `<p>Olá, ${escapeHtml(owner.name)}!</p><p>Follow-ups agendados para hoje:</p><ul>${itemsHtml}</ul>`,
+        subject: `Você tem ${items.length} tarefa${items.length > 1 ? "s" : ""} para hoje`,
+        html: `<p>Olá, ${escapeHtml(owner.name)}!</p><p>Tarefas agendadas para hoje:</p><ul>${itemsHtml}</ul>`,
       });
       sent++;
     } catch {

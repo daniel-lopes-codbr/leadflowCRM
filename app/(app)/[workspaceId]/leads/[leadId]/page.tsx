@@ -81,12 +81,22 @@ export default async function LeadDetailPage(
     };
   });
 
+  const { data: memberRows } = await supabase
+    .from("memberships")
+    .select("profiles(id, name)")
+    .eq("workspace_id", params.workspaceId);
+
+  const members = (memberRows ?? [])
+    .map((row) => toOneRelation(row.profiles as { id: string; name: string } | { id: string; name: string }[] | null))
+    .filter((member): member is { id: string; name: string } => !!member);
+
   return (
     <LeadDetail
       workspaceId={params.workspaceId}
       lead={lead}
       activities={activities}
       attachments={attachments}
+      members={members}
     />
   );
 }
